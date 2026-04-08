@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - GastroRadar</title>
+  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome para los iconos de redes sociales -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+<nav class="bg-blue-600 p-4 text-white shadow-lg relative z-10">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="index.html" class="text-xl font-bold hover:text-blue-200 transition">GastroRadar</a>
+    <div class="flex items-center space-x-4">
+      <a href="index.html" class="hover:text-blue-200 transition">Inicio</a>
+      <a href="resena.html" class="hover:text-blue-200 transition">Dejar Reseña</a>
+      <a href="perfil.html" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition ml-4">Mi Perfil</a>
+      <div id="user-status">
+        <button class="text-sm border-l border-blue-400 pl-4 ml-2 hover:text-red-200 transition">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="flex-grow flex flex-col">
+  <main class="container mx-auto p-6 flex-grow">
+
+    <!-- Encabezado del Perfil -->
+    <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
+      <div class="w-32 h-32 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="text-center md:text-left flex-grow">
+        <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Manuel Herrera</h1>
+        <p class="text-gray-500 mt-1"><i class="fas fa-envelope mr-2"></i>manuel.herrera@ejemplo.com</p>
+        <p class="text-gray-500 mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Octubre 2024</p>
+        <div class="mt-4 flex justify-center md:justify-start gap-4">
+            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
+                <span class="block text-2xl font-bold text-blue-600">12</span>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">Reseñas</span>
+            </div>
+            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
+                <span class="block text-2xl font-bold text-blue-600">45</span>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">Me gusta</span>
+            </div>
+        </div>
+      </div>
+      <div class="shrink-0">
+         <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center">
+            <i class="fas fa-edit mr-2"></i> Editar Perfil
+         </button>
+      </div>
+    </div>
+
+    <!-- Contenido del Perfil -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Columna Izquierda: Actividad Reciente o Estadísticas -->
+      <div class="lg:col-span-1 space-y-6">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+             <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Mis Restaurantes Favoritos</h3>
+             <ul class="space-y-3">
+                 <li class="flex items-center justify-between">
+                     <span class="font-medium">Aramburu</span>
+                     <span class="text-yellow-500">5.0 ★</span>
+                 </li>
+                 <li class="flex items-center justify-between">
+                     <span class="font-medium">Don Julio</span>
+                     <span class="text-yellow-500">4.8 ★</span>
+                 </li>
+                 <li class="flex items-center justify-between">
+                     <span class="font-medium">La Carnicería</span>
+                     <span class="text-yellow-500">4.7 ★</span>
+                 </li>
+             </ul>
+          </div>
+
+          <div class="bg-white p-6 rounded-lg shadow-md">
+             <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Insignias</h3>
+             <div class="flex flex-wrap gap-2">
+                 <span class="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold border border-yellow-200"><i class="fas fa-star mr-1"></i> Crítico Top</span>
+                 <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-semibold border border-red-200"><i class="fas fa-fire mr-1"></i> Racha 5 Meses</span>
+                 <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-semibold border border-blue-200"><i class="fas fa-pizza-slice mr-1"></i> Amante de la Pizza</span>
+             </div>
+          </div>
+      </div>
+
+      <!-- Columna Derecha: Historial de Reseñas -->
+      <div class="lg:col-span-2">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex justify-between items-center border-b pb-2 mb-6">
+              <h2 class="text-2xl font-bold text-gray-800">Mi Historial de Reseñas</h2>
+              <span class="text-sm text-gray-500">Ordenadas por más recientes</span>
+          </div>
+
+          <div class="space-y-6" id="mis-resenas">
+
+            <!-- Reseña del usuario 1 -->
+            <div class="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h3 class="font-bold text-lg text-blue-600">Casa Cavia</h3>
+                  <p class="text-xs text-gray-400">Escrita hace 2 días</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="text-gray-400 hover:text-blue-500 transition" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+
+              <div class="mb-3 flex items-center gap-2">
+                <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: 4.5 ★</span>
+              </div>
+
+              <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded">
+                 <span><strong>Comida:</strong> 4 ★</span>
+                 <span><strong>Atención:</strong> 5 ★</span>
+                 <span><strong>Precio:</strong> 3 ★</span>
+              </div>
+
+              <p class="text-gray-700 text-sm">El ambiente es hermoso y los cócteles son de autor. La comida es muy buena pero las porciones son un poco chicas. Volvería por los tragos.</p>
+            </div>
+
+            <!-- Reseña del usuario 2 -->
+            <div class="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h3 class="font-bold text-lg text-blue-600">Pizzería Güerrín</h3>
+                  <p class="text-xs text-gray-400">Escrita el 15 de Octubre, 2024</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="text-gray-400 hover:text-blue-500 transition" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+
+              <div class="mb-3 flex items-center gap-2">
+                <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: 5.0 ★</span>
+              </div>
+
+              <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded">
+                 <span><strong>Comida:</strong> 5 ★</span>
+                 <span><strong>Atención:</strong> 4 ★</span>
+                 <span><strong>Precio:</strong> 5 ★</span>
+              </div>
+
+              <p class="text-gray-700 text-sm">Un clásico que nunca falla. La pizza de muzzarella es la mejor de la calle Corrientes. Siempre hay mucha gente pero atienden rápido.</p>
+            </div>
+
+          </div>
+
+          <div class="mt-6 text-center">
+              <button class="text-blue-600 font-semibold hover:text-blue-800 transition">Cargar más reseñas <i class="fas fa-chevron-down ml-1 text-xs"></i></button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer class="bg-gray-800 text-white pt-10 pb-6 mt-auto w-full">
+  <div class="container mx-auto px-6">
+    <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6">
+      <div class="mb-6 md:mb-0 text-center md:text-left">
+        <h3 class="text-2xl font-bold text-blue-400">GastroRadar</h3>
+        <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.</p>
+      </div>
+
+      <div class="flex flex-col items-center md:items-start">
+        <h4 class="text-lg font-semibold mb-4">Síguenos en nuestras redes</h4>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-pink-500 transition-colors duration-300 flex flex-col items-center">
+            <i class="fab fa-instagram text-2xl mb-1"></i>
+            <span class="text-xs">@gastroradar</span>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300 flex flex-col items-center">
+            <i class="fab fa-twitter text-2xl mb-1"></i>
+            <span class="text-xs">@gastroradar</span>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300 flex flex-col items-center">
+            <i class="fab fa-facebook text-2xl mb-1"></i>
+            <span class="text-xs">/gastroradar</span>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-black hover:bg-white hover:rounded-full transition-colors duration-300 flex flex-col items-center">
+            <i class="fa-brands fa-tiktok text-2xl mb-1"></i>
+            <span class="text-xs">@gastroradar</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="text-center text-gray-500 text-sm mt-6">
+      &copy; 2024 GastroRadar. Todos los derechos reservados.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
