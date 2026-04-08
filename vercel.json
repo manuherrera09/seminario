@@ -1,8 +1,9 @@
 {
-  "build": {
-    "env": {
-      "OUTPUT_DIRECTORY": "dist"
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  },
-  "outputDirectory": "dist"
+  ]
 }
