@@ -211,13 +211,13 @@
         // Buscamos su información en la tabla perfiles
         const { data: perfilData } = await supabaseClient
             .from('perfiles')
-            .select('nombre, apellido')
+            .select('nombre_usuario')
             .eq('id', session.user.id)
             .single();
 
         let userDisplayName = session.user.email; // Por defecto mostramos el email
-        if (perfilData && (perfilData.nombre || perfilData.apellido)) {
-             userDisplayName = `${perfilData.nombre || ''} ${perfilData.apellido || ''}`.trim();
+        if (perfilData && perfilData.nombre_usuario) {
+             userDisplayName = perfilData.nombre_usuario;
         }
 
         // Actualizamos la barra de navegación superior

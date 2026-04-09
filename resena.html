@@ -159,7 +159,7 @@
     <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6">
       <div class="mb-6 md:mb-0 text-center md:text-left">
         <h3 class="text-2xl font-bold text-red-400">GastroRadar</h3>
-        <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.</p>
+        <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiences gastronómicas basadas en opiniones reales.</p>
       </div>
 
       <div class="flex flex-col items-center md:items-start">
@@ -217,13 +217,13 @@
         // Buscamos su info
         const { data: perfilData } = await supabaseClient
             .from('perfiles')
-            .select('nombre, apellido')
+            .select('nombre_usuario')
             .eq('id', currentUserId)
             .single();
 
         let userDisplayName = session.user.email;
-        if (perfilData && (perfilData.nombre || perfilData.apellido)) {
-             userDisplayName = `${perfilData.nombre || ''} ${perfilData.apellido || ''}`.trim();
+        if (perfilData && perfilData.nombre_usuario) {
+             userDisplayName = perfilData.nombre_usuario;
         }
 
         // Actualizamos nav

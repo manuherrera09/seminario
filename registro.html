@@ -34,22 +34,12 @@
 
     <form id="register-form" class="space-y-6">
       <div>
-        <label for="name" class="block text-sm font-medium text-gray-700">Nombre</label>
+        <label for="username" class="block text-sm font-medium text-gray-700">Nombre de Usuario</label>
         <div class="mt-1 relative rounded-md shadow-sm">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-user text-gray-400"></i>
           </div>
-          <input type="text" name="name" id="name" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="Juan" required>
-        </div>
-      </div>
-
-      <div>
-        <label for="lastname" class="block text-sm font-medium text-gray-700">Apellido</label>
-        <div class="mt-1 relative rounded-md shadow-sm">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-user text-gray-400"></i>
-          </div>
-          <input type="text" name="lastname" id="lastname" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="Pérez" required>
+          <input type="text" name="username" id="username" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="tu_usuario" required>
         </div>
       </div>
 
@@ -154,8 +144,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Registrando...';
 
-    const name = document.getElementById('name').value;
-    const lastname = document.getElementById('lastname').value;
+    const username = document.getElementById('username').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
@@ -181,8 +170,7 @@
           .insert([
               {
                   id: userId,
-                  nombre: name,
-                  apellido: lastname
+                  nombre_usuario: username
               }
           ]);
 

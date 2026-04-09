@@ -40,6 +40,21 @@
         <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
         <p class="text-gray-500 mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
         <p class="text-gray-500 mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Recientemente</p>
+
+        <!-- Contenedor para la biografía -->
+        <div class="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-100 hidden" id="bio-container">
+            <p class="text-sm text-gray-700 italic" id="profile-bio"></p>
+        </div>
+
+        <!-- Formulario para editar la biografía (Oculto por defecto) -->
+        <div class="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-100 hidden" id="bio-edit-container">
+            <textarea id="bio-edit-textarea" rows="3" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="Escribe algo sobre ti..."></textarea>
+            <div class="mt-2 flex gap-2">
+                <button id="save-bio-btn" class="bg-[#c41200] text-white px-4 py-1 rounded text-sm font-semibold hover:bg-[#a00e00] transition">Guardar</button>
+                <button id="cancel-bio-btn" class="bg-gray-300 text-gray-700 px-4 py-1 rounded text-sm font-semibold hover:bg-gray-400 transition">Cancelar</button>
+            </div>
+        </div>
+
         <div class="mt-4 flex justify-center md:justify-start gap-4">
             <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
                 <span class="block text-2xl font-bold text-[#c41200]">0</span>
@@ -52,7 +67,7 @@
         </div>
       </div>
       <div class="shrink-0">
-         <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center">
+         <button id="edit-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center">
             <i class="fas fa-edit mr-2"></i> Editar Perfil
          </button>
       </div>
@@ -143,6 +158,9 @@
   // @ts-ignore
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  let currentUserId = null;
+  let currentBio = "";
+
   // =========================================================================
   // 2. LÓGICA DE PERFIL Y AUTENTICACIÓN
   // =========================================================================
@@ -157,27 +175,35 @@
         return;
     }
 
-    // Buscamos su información en la tabla perfiles
+    currentUserId = session.user.id;
+
+    // Buscamos su información en la tabla perfiles (agregamos el campo biografia)
     const { data: perfilData, error: perfilError } = await supabaseClient
         .from('perfiles')
-        .select('nombre, apellido')
-        .eq('id', session.user.id)
+        .select('nombre_usuario, biografia')
+        .eq('id', currentUserId)
         .single();
 
     let userDisplayName = session.user.email; // Por defecto mostramos el email
-    let fullName = "Usuario de GastroRadar";
+    let profileNameDisplay = "Usuario de GastroRadar";
 
     if (perfilData) {
-         if (perfilData.nombre || perfilData.apellido) {
-             fullName = `${perfilData.nombre || ''} ${perfilData.apellido || ''}`.trim();
-             userDisplayName = fullName;
+         if (perfilData.nombre_usuario) {
+             userDisplayName = perfilData.nombre_usuario;
+             profileNameDisplay = perfilData.nombre_usuario;
+         }
+
+         // Si tiene biografía, la mostramos
+         if (perfilData.biografia && perfilData.biografia.trim() !== '') {
+             currentBio = perfilData.biografia;
+             mostrarBiografia(currentBio);
          }
     } else {
          console.warn("No se encontró perfil asociado en la tabla 'perfiles'", perfilError);
     }
 
     // Actualizamos la información principal en el DOM
-    document.getElementById('profile-name').textContent = fullName;
+    document.getElementById('profile-name').textContent = profileNameDisplay;
     document.getElementById('profile-email').innerHTML = `<i class="fas fa-envelope mr-2"></i>${session.user.email}`;
 
     // Actualizamos la barra de navegación superior
@@ -192,7 +218,79 @@
         await supabaseClient.auth.signOut();
         window.location.href = 'index.html'; // Redirigimos al inicio al salir
     });
+
+    // Configurar los eventos de edición de perfil
+    configurarEdicionPerfil();
   });
+
+  // Función para mostrar la biografía en texto
+  function mostrarBiografia(texto) {
+      const bioContainer = document.getElementById('bio-container');
+      const bioText = document.getElementById('profile-bio');
+
+      if (texto && texto.trim() !== '') {
+          bioText.innerHTML = `"${texto.replace(/\\n/g, '<br>')}"`;
+          bioContainer.classList.remove('hidden');
+      } else {
+          bioContainer.classList.add('hidden');
+      }
+  }
+
+  // =========================================================================
+  // 3. LÓGICA PARA EDITAR PERFIL (BIOGRAFÍA)
+  // =========================================================================
+  function configurarEdicionPerfil() {
+      const btnEditProfile = document.getElementById('edit-profile-btn');
+      const bioContainer = document.getElementById('bio-container');
+      const bioEditContainer = document.getElementById('bio-edit-container');
+      const textareaBio = document.getElementById('bio-edit-textarea');
+      const btnSave = document.getElementById('save-bio-btn');
+      const btnCancel = document.getElementById('cancel-bio-btn');
+
+      // Botón Editar Perfil
+      btnEditProfile.addEventListener('click', () => {
+          bioContainer.classList.add('hidden');
+          bioEditContainer.classList.remove('hidden');
+          textareaBio.value = currentBio; // Cargar la bio actual en el textarea
+          textareaBio.focus();
+      });
+
+      // Botón Cancelar
+      btnCancel.addEventListener('click', () => {
+          bioEditContainer.classList.add('hidden');
+          mostrarBiografia(currentBio); // Volver a mostrar el texto si lo había
+      });
+
+      // Botón Guardar
+      btnSave.addEventListener('click', async () => {
+          const nuevaBio = textareaBio.value.trim();
+
+          btnSave.disabled = true;
+          btnSave.textContent = '...';
+
+          try {
+              // Actualizamos la biografía en la base de datos
+              const { error } = await supabaseClient
+                  .from('perfiles')
+                  .update({ biografia: nuevaBio })
+                  .eq('id', currentUserId);
+
+              if (error) throw error;
+
+              // Actualizamos exitosamente
+              currentBio = nuevaBio;
+              bioEditContainer.classList.add('hidden');
+              mostrarBiografia(currentBio);
+
+          } catch (err) {
+              console.error('Error al actualizar la biografía:', err);
+              alert("Ocurrió un error al guardar tu biografía. Por favor intenta de nuevo.");
+          } finally {
+              btnSave.disabled = false;
+              btnSave.textContent = 'Guardar';
+          }
+      });
+  }
 </script>
 </body>
 </html>
