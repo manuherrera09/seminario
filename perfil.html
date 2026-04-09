@@ -33,9 +33,13 @@
 
     <!-- Encabezado del Perfil -->
     <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
-      <div class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0">
-        <i class="fas fa-user"></i>
+
+      <!-- Contenedor de la foto de perfil -->
+      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group">
+        <i id="profile-icon" class="fas fa-user"></i>
+        <img id="profile-image" src="" alt="Foto de perfil" class="w-full h-full object-cover hidden">
       </div>
+
       <div class="text-center md:text-left flex-grow">
         <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
         <p class="text-gray-500 mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
@@ -48,8 +52,17 @@
 
         <!-- Formulario para editar la biografía (Oculto por defecto) -->
         <div class="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-100 hidden" id="bio-edit-container">
-            <textarea id="bio-edit-textarea" rows="3" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="Escribe algo sobre ti..."></textarea>
-            <div class="mt-2 flex gap-2">
+            <div class="mb-3">
+                <label for="image-url-input" class="block text-xs font-semibold text-gray-600 mb-1">URL de la Foto de Perfil (Opcional)</label>
+                <input type="url" id="image-url-input" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/foto.jpg">
+            </div>
+
+            <div>
+                <label for="bio-edit-textarea" class="block text-xs font-semibold text-gray-600 mb-1">Tu biografía</label>
+                <textarea id="bio-edit-textarea" rows="3" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="Escribe algo sobre ti..."></textarea>
+            </div>
+
+            <div class="mt-3 flex gap-2">
                 <button id="save-bio-btn" class="bg-[#c41200] text-white px-4 py-1 rounded text-sm font-semibold hover:bg-[#a00e00] transition">Guardar</button>
                 <button id="cancel-bio-btn" class="bg-gray-300 text-gray-700 px-4 py-1 rounded text-sm font-semibold hover:bg-gray-400 transition">Cancelar</button>
             </div>
@@ -160,6 +173,7 @@
 
   let currentUserId = null;
   let currentBio = "";
+  let currentImageUrl = "";
 
   // =========================================================================
   // 2. LÓGICA DE PERFIL Y AUTENTICACIÓN
@@ -177,10 +191,10 @@
 
     currentUserId = session.user.id;
 
-    // Buscamos su información en la tabla perfiles (agregamos el campo biografia)
+    // Buscamos su información en la tabla perfiles (agregamos el campo biografia e imagen_url)
     const { data: perfilData, error: perfilError } = await supabaseClient
         .from('perfiles')
-        .select('nombre_usuario, biografia')
+        .select('nombre_usuario, biografia, imagen_url')
         .eq('id', currentUserId)
         .single();
 
@@ -197,6 +211,12 @@
          if (perfilData.biografia && perfilData.biografia.trim() !== '') {
              currentBio = perfilData.biografia;
              mostrarBiografia(currentBio);
+         }
+
+         // Si tiene imagen_url, la mostramos
+         if (perfilData.imagen_url && perfilData.imagen_url.trim() !== '') {
+             currentImageUrl = perfilData.imagen_url;
+             mostrarImagenPerfil(currentImageUrl);
          }
     } else {
          console.warn("No se encontró perfil asociado en la tabla 'perfiles'", perfilError);
@@ -236,14 +256,32 @@
       }
   }
 
+  // Función para mostrar la imagen de perfil
+  function mostrarImagenPerfil(url) {
+      const icon = document.getElementById('profile-icon');
+      const img = document.getElementById('profile-image');
+
+      if (url && url.trim() !== '') {
+          img.src = url;
+          img.classList.remove('hidden');
+          icon.classList.add('hidden');
+      } else {
+          img.classList.add('hidden');
+          icon.classList.remove('hidden');
+      }
+  }
+
   // =========================================================================
-  // 3. LÓGICA PARA EDITAR PERFIL (BIOGRAFÍA)
+  // 3. LÓGICA PARA EDITAR PERFIL (BIOGRAFÍA E IMAGEN)
   // =========================================================================
   function configurarEdicionPerfil() {
       const btnEditProfile = document.getElementById('edit-profile-btn');
       const bioContainer = document.getElementById('bio-container');
       const bioEditContainer = document.getElementById('bio-edit-container');
+
+      const inputImageUrl = document.getElementById('image-url-input');
       const textareaBio = document.getElementById('bio-edit-textarea');
+
       const btnSave = document.getElementById('save-bio-btn');
       const btnCancel = document.getElementById('cancel-bio-btn');
 
@@ -251,8 +289,11 @@
       btnEditProfile.addEventListener('click', () => {
           bioContainer.classList.add('hidden');
           bioEditContainer.classList.remove('hidden');
-          textareaBio.value = currentBio; // Cargar la bio actual en el textarea
-          textareaBio.focus();
+
+          textareaBio.value = currentBio; // Cargar la bio actual
+          inputImageUrl.value = currentImageUrl; // Cargar la url actual
+
+          inputImageUrl.focus();
       });
 
       // Botón Cancelar
@@ -264,27 +305,34 @@
       // Botón Guardar
       btnSave.addEventListener('click', async () => {
           const nuevaBio = textareaBio.value.trim();
+          const nuevaImgUrl = inputImageUrl.value.trim();
 
           btnSave.disabled = true;
           btnSave.textContent = '...';
 
           try {
-              // Actualizamos la biografía en la base de datos
+              // Actualizamos los datos en la base de datos
               const { error } = await supabaseClient
                   .from('perfiles')
-                  .update({ biografia: nuevaBio })
+                  .update({
+                      biografia: nuevaBio,
+                      imagen_url: nuevaImgUrl
+                  })
                   .eq('id', currentUserId);
 
               if (error) throw error;
 
               // Actualizamos exitosamente
               currentBio = nuevaBio;
+              currentImageUrl = nuevaImgUrl;
+
               bioEditContainer.classList.add('hidden');
               mostrarBiografia(currentBio);
+              mostrarImagenPerfil(currentImageUrl);
 
           } catch (err) {
-              console.error('Error al actualizar la biografía:', err);
-              alert("Ocurrió un error al guardar tu biografía. Por favor intenta de nuevo.");
+              console.error('Error al actualizar el perfil:', err);
+              alert("Ocurrió un error al guardar tu perfil. Por favor intenta de nuevo.");
           } finally {
               btnSave.disabled = false;
               btnSave.textContent = 'Guardar';
