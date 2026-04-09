@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Regístrate - GastroRadar</title>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome para los iconos de redes sociales -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,14 +29,27 @@
       <p class="text-gray-500 mt-2">Crea tu cuenta para empezar a reseñar.</p>
     </div>
 
+    <!-- Contenedor para mensajes -->
+    <div id="message-container" class="hidden mb-4 p-3 rounded-md text-sm text-center"></div>
+
     <form id="register-form" class="space-y-6">
       <div>
-        <label for="name" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+        <label for="name" class="block text-sm font-medium text-gray-700">Nombre</label>
         <div class="mt-1 relative rounded-md shadow-sm">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-user text-gray-400"></i>
           </div>
-          <input type="text" name="name" id="name" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="Juan Pérez" required>
+          <input type="text" name="name" id="name" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="Juan" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="lastname" class="block text-sm font-medium text-gray-700">Apellido</label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-user text-gray-400"></i>
+          </div>
+          <input type="text" name="lastname" id="lastname" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="Pérez" required>
         </div>
       </div>
 
@@ -54,12 +69,13 @@
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-lock text-gray-400"></i>
           </div>
-          <input type="password" name="password" id="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="••••••••" required>
+          <input type="password" name="password" id="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] sm:text-sm" placeholder="••••••••" required minlength="6">
         </div>
+        <p class="mt-1 text-xs text-gray-500">Debe tener al menos 6 caracteres.</p>
       </div>
 
       <div>
-        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#c41200] hover:bg-[#a00e00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#c41200] transition">
+        <button type="submit" id="submit-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#c41200] hover:bg-[#a00e00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#c41200] transition disabled:opacity-50">
           Registrarse
         </button>
       </div>
@@ -77,14 +93,14 @@
 
       <div class="mt-6 grid grid-cols-2 gap-3">
         <div>
-          <a href="#" class="w-full flex items-center justify-center px-8 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
+          <button type="button" class="w-full flex items-center justify-center px-8 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
             <i class="fab fa-google text-red-500 mr-2"></i> Google
-          </a>
+          </button>
         </div>
         <div>
-          <a href="#" class="w-full flex items-center justify-center px-8 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
+          <button type="button" class="w-full flex items-center justify-center px-8 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition">
             <i class="fab fa-facebook-f text-blue-600 mr-2"></i> Facebook
-          </a>
+          </button>
         </div>
       </div>
     </div>
@@ -103,10 +119,101 @@
 </footer>
 
 <script>
-  document.getElementById('register-form').addEventListener('submit', (e) => {
+  // =========================================================================
+  // 1. CONFIGURACIÓN SUPABASE
+  // =========================================================================
+  const SUPABASE_URL = 'https://xnndkqcuuejtznxhdiue.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubmRrcWN1dWVqdHpueGhkaXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2OTg2MjMsImV4cCI6MjA5MTI3NDYyM30.OrM0AqS0Q4KLmhYa8R9-wyMdDz7tlxU8h5ceacW37f8';
+
+  // @ts-ignore
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // =========================================================================
+  // 2. LÓGICA DE REGISTRO
+  // =========================================================================
+  const registerForm = document.getElementById('register-form');
+  const messageDiv = document.getElementById('message-container');
+  const submitBtn = document.getElementById('submit-btn');
+
+  function showMessage(msg, isError = false) {
+      messageDiv.textContent = msg;
+      messageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+
+      if (isError) {
+          messageDiv.classList.add('bg-red-100', 'text-red-700');
+      } else {
+          messageDiv.classList.add('bg-green-100', 'text-green-700');
+      }
+  }
+
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    // Aquí irá la lógica de Supabase después
-    window.location.href = 'index.html';
+
+    // Limpiar errores previos y deshabilitar el botón
+    messageDiv.classList.add('hidden');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Registrando...';
+
+    const name = document.getElementById('name').value;
+    const lastname = document.getElementById('lastname').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    try {
+      // 1. Crear usuario en Supabase Auth
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (authError) throw authError;
+
+      // Dependiendo de tu config de Supabase, podría requerir confirmación de email
+      const userId = authData.user?.id;
+
+      if (!userId) {
+          throw new Error("No se pudo obtener el ID del usuario creado.");
+      }
+
+      // 2. Guardar datos extra en la tabla 'perfiles'
+      const { error: profileError } = await supabaseClient
+          .from('perfiles')
+          .insert([
+              {
+                  id: userId,
+                  nombre: name,
+                  apellido: lastname
+              }
+          ]);
+
+      if (profileError) {
+          console.error("Error al crear el perfil:", profileError);
+          // Opcional: mostrar un mensaje advirtiendo que el usuario se creó pero el perfil falló
+      }
+
+      showMessage("¡Registro exitoso! Redirigiendo...", false);
+
+      // Redirigimos al inicio después de un segundo
+      setTimeout(() => {
+          window.location.href = 'index.html';
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error de registro:', error.message);
+      let errorMsg = 'Hubo un error al registrar tu cuenta. Intenta nuevamente.';
+
+      if (error.message.includes('already registered')) {
+          errorMsg = 'Este correo ya se encuentra registrado.';
+      } else if (error.message.includes('Password should be at least')) {
+          errorMsg = 'La contraseña es demasiado corta.';
+      }
+
+      showMessage(errorMsg, true);
+
+      // Restaurar el botón
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Registrarse';
+    }
   });
 </script>
 </body>

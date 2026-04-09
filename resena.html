@@ -55,6 +55,13 @@
 
     <section class="bg-white p-6 rounded-lg shadow-md md:col-span-2 lg:col-span-1">
       <h2 class="text-2xl font-semibold mb-4 text-[#c41200]">Nueva Reseña</h2>
+
+      <!-- Contenedor para mostrar si el usuario debe iniciar sesión -->
+      <div id="auth-warning" class="hidden mb-4 p-4 bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200">
+        <p class="font-semibold"><i class="fas fa-exclamation-triangle mr-2"></i>Debes iniciar sesión</p>
+        <p class="text-sm mt-1">Para poder publicar una reseña, por favor <a href="login.html" class="underline font-bold">inicia sesión</a> o <a href="registro.html" class="underline font-bold">regístrate</a>.</p>
+      </div>
+
       <form id="resena-form" class="space-y-4">
         <div>
           <label for="restaurante" class="block text-sm font-medium">Restaurante</label>
@@ -115,7 +122,7 @@
           <textarea id="comentario" rows="4" class="w-full border p-2 rounded mt-1" placeholder="¿Qué tal estuvo la comida?" required></textarea>
         </div>
 
-        <button type="submit" class="w-full bg-[#c41200] text-white py-2 rounded hover:bg-[#a00e00] transition">
+        <button type="submit" id="submit-btn" class="w-full bg-[#c41200] text-white py-2 rounded hover:bg-[#a00e00] transition disabled:opacity-50">
           Publicar Reseña
         </button>
       </form>
@@ -194,10 +201,57 @@
   // @ts-ignore
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  let currentUserId = null; // Variable para almacenar el ID del usuario logueado
+
   // =========================================================================
   // 2. CARGAR RESTAURANTES DINÁMICAMENTE DESDE LA BASE DE DATOS
   // =========================================================================
   document.addEventListener('DOMContentLoaded', async () => {
+
+    // ---- Autenticación y control de UI ----
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+    if (session && session.user) {
+        currentUserId = session.user.id;
+
+        // Buscamos su info
+        const { data: perfilData } = await supabaseClient
+            .from('perfiles')
+            .select('nombre, apellido')
+            .eq('id', currentUserId)
+            .single();
+
+        let userDisplayName = session.user.email;
+        if (perfilData && (perfilData.nombre || perfilData.apellido)) {
+             userDisplayName = `${perfilData.nombre || ''} ${perfilData.apellido || ''}`.trim();
+        }
+
+        // Actualizamos nav
+        const userStatusDiv = document.getElementById('user-status');
+        userStatusDiv.innerHTML = `
+            <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
+            <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
+        `;
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        });
+    } else {
+        // Si NO hay sesión, bloqueamos el formulario y mostramos advertencia
+        document.getElementById('auth-warning').classList.remove('hidden');
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').classList.add('cursor-not-allowed', 'opacity-50');
+
+        // Deshabilitar los inputs (opcional)
+        const formElements = document.getElementById('resena-form').elements;
+        for (let i = 0; i < formElements.length; i++) {
+            formElements[i].disabled = true;
+        }
+    }
+
+
+    // ---- Cargar Restaurantes ----
     const selectRestaurante = document.getElementById('restaurante');
 
     if (!supabaseClient) {
@@ -206,8 +260,6 @@
     }
 
     try {
-        // Consultamos la tabla 'restaurantes'. (Asegúrate de que la tabla exista y se llame así)
-        // Pedimos que nos traiga el 'id' y el 'nombre', ordenados alfabéticamente.
         const { data: restaurantes, error } = await supabaseClient
             .from('restaurantes')
             .select('id, nombre')
@@ -215,10 +267,8 @@
 
         if (error) throw error;
 
-        // Limpiamos el select
         selectRestaurante.innerHTML = '<option value="">Selecciona un restaurante...</option>';
 
-        // Agregamos cada restaurante como un <option>
         if (restaurantes && restaurantes.length > 0) {
             restaurantes.forEach(rest => {
                 const option = document.createElement('option');
@@ -243,6 +293,15 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    if (!currentUserId) {
+        alert("Debes iniciar sesión para publicar una reseña.");
+        return;
+    }
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Publicando...';
+
     const restauranteId = document.getElementById('restaurante').value;
     const comentario = document.getElementById('comentario').value;
 
@@ -252,25 +311,18 @@
     const atencion = document.querySelector('input[name="atencion"]:checked')?.value;
     const precio = document.querySelector('input[name="precio"]:checked')?.value;
 
-    if (!supabaseClient) {
-         alert(`Simulación (Sin Supabase configurado):\nRestaurante ID: ${restauranteId}\nCalificación General: ${general}\nComentario: ${comentario}`);
-         form.reset();
-         return;
-    }
-
     try {
         // Insertamos la nueva reseña en la tabla 'resenas'
         const { data, error } = await supabaseClient
             .from('resenas')
             .insert([{
                 id_restaurante: restauranteId,
+                id_usuario: currentUserId,     // AHORA SÍ ENVIAMOS EL ID DEL USUARIO LOGUEADO
                 puntuacion_general: general,
                 calidad_comida: comida,
                 atencion: atencion,
                 precio: precio,
                 comentario: comentario
-                // Nota: id_usuario lo dejaremos vacío u omitido por ahora
-                // hasta que implementemos la autenticación de usuarios.
             }]);
 
         if (error) throw error;
@@ -278,9 +330,15 @@
         alert("¡Reseña publicada con éxito!");
         form.reset();
 
+        // Redirigir al inicio o a su perfil
+        window.location.href = 'index.html';
+
     } catch (err) {
         console.error('Error al guardar la reseña:', err);
         alert("Hubo un error al guardar tu reseña. Revisa la consola para más detalles.");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Publicar Reseña';
     }
   });
 </script>
