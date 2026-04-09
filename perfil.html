@@ -13,15 +13,16 @@
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-blue-600 p-4 text-white shadow-lg relative z-10">
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-10">
   <div class="container mx-auto flex justify-between items-center">
-    <a href="index.html" class="text-xl font-bold hover:text-blue-200 transition">GastroRadar</a>
+    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">GastroRadar</a>
     <div class="flex items-center space-x-4">
-      <a href="index.html" class="hover:text-blue-200 transition">Inicio</a>
-      <a href="resena.html" class="hover:text-blue-200 transition">Dejar Reseña</a>
-      <a href="perfil.html" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition ml-4">Mi Perfil</a>
-      <div id="user-status">
-        <button class="text-sm border-l border-blue-400 pl-4 ml-2 hover:text-red-200 transition">Cerrar sesión</button>
+      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+      <a href="resena.html" class="hover:text-red-200 transition">Dejar Reseña</a>
+      <a href="perfil.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition ml-4">Mi Perfil</a>
+      <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3">
+        <a href="login.html" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
+        <a href="registro.html" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
       </div>
     </div>
   </div>
@@ -32,7 +33,7 @@
 
     <!-- Encabezado del Perfil -->
     <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
-      <div class="w-32 h-32 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0">
+      <div class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0">
         <i class="fas fa-user"></i>
       </div>
       <div class="text-center md:text-left flex-grow">
@@ -41,11 +42,11 @@
         <p class="text-gray-500 mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Octubre 2024</p>
         <div class="mt-4 flex justify-center md:justify-start gap-4">
             <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
-                <span class="block text-2xl font-bold text-blue-600">12</span>
+                <span class="block text-2xl font-bold text-[#c41200]">12</span>
                 <span class="text-xs text-gray-500 uppercase tracking-wider">Reseñas</span>
             </div>
             <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
-                <span class="block text-2xl font-bold text-blue-600">45</span>
+                <span class="block text-2xl font-bold text-[#c41200]">45</span>
                 <span class="text-xs text-gray-500 uppercase tracking-wider">Me gusta</span>
             </div>
         </div>
@@ -74,7 +75,7 @@
                      <span class="text-yellow-500">4.8 ★</span>
                  </li>
                  <li class="flex items-center justify-between">
-                     <span class="font-medium">La Carnicería</span>
+                     <span class="font-medium">Pizzeria Pirilo</span>
                      <span class="text-yellow-500">4.7 ★</span>
                  </li>
              </ul>
@@ -85,7 +86,7 @@
              <div class="flex flex-wrap gap-2">
                  <span class="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold border border-yellow-200"><i class="fas fa-star mr-1"></i> Crítico Top</span>
                  <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-semibold border border-red-200"><i class="fas fa-fire mr-1"></i> Racha 5 Meses</span>
-                 <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-semibold border border-blue-200"><i class="fas fa-pizza-slice mr-1"></i> Amante de la Pizza</span>
+                 <span class="bg-blue-100 text-[#c41200] text-xs px-3 py-1 rounded-full font-semibold border border-blue-200"><i class="fas fa-pizza-slice mr-1"></i> Amante de la Pizza</span>
              </div>
           </div>
       </div>
@@ -104,11 +105,11 @@
             <div class="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
               <div class="flex justify-between items-start mb-2">
                 <div>
-                  <h3 class="font-bold text-lg text-blue-600">Casa Cavia</h3>
+                  <h3 class="font-bold text-lg text-[#c41200]">Casa Cavia</h3>
                   <p class="text-xs text-gray-400">Escrita hace 2 días</p>
                 </div>
                 <div class="flex gap-2">
-                    <button class="text-gray-400 hover:text-blue-500 transition" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-400 hover:text-[#c41200] transition" title="Editar"><i class="fas fa-edit"></i></button>
                     <button class="text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fas fa-trash"></i></button>
                 </div>
               </div>
@@ -130,11 +131,11 @@
             <div class="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
               <div class="flex justify-between items-start mb-2">
                 <div>
-                  <h3 class="font-bold text-lg text-blue-600">Pizzería Güerrín</h3>
+                  <h3 class="font-bold text-lg text-[#c41200]">Pizzería Güerrín</h3>
                   <p class="text-xs text-gray-400">Escrita el 15 de Octubre, 2024</p>
                 </div>
                 <div class="flex gap-2">
-                    <button class="text-gray-400 hover:text-blue-500 transition" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-400 hover:text-[#c41200] transition" title="Editar"><i class="fas fa-edit"></i></button>
                     <button class="text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fas fa-trash"></i></button>
                 </div>
               </div>
@@ -155,7 +156,7 @@
           </div>
 
           <div class="mt-6 text-center">
-              <button class="text-blue-600 font-semibold hover:text-blue-800 transition">Cargar más reseñas <i class="fas fa-chevron-down ml-1 text-xs"></i></button>
+              <button class="text-[#c41200] font-semibold hover:text-[#a00e00] transition">Cargar más reseñas <i class="fas fa-chevron-down ml-1 text-xs"></i></button>
           </div>
 
         </div>
@@ -169,7 +170,7 @@
   <div class="container mx-auto px-6">
     <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6">
       <div class="mb-6 md:mb-0 text-center md:text-left">
-        <h3 class="text-2xl font-bold text-blue-400">GastroRadar</h3>
+        <h3 class="text-2xl font-bold text-red-400">GastroRadar</h3>
         <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.</p>
       </div>
 
@@ -180,11 +181,11 @@
             <i class="fab fa-instagram text-2xl mb-1"></i>
             <span class="text-xs">@gastroradar</span>
           </a>
-          <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300 flex flex-col items-center">
+          <a href="#" class="text-gray-400 hover:text-red-400 transition-colors duration-300 flex flex-col items-center">
             <i class="fab fa-twitter text-2xl mb-1"></i>
             <span class="text-xs">@gastroradar</span>
           </a>
-          <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300 flex flex-col items-center">
+          <a href="#" class="text-gray-400 hover:text-red-600 transition-colors duration-300 flex flex-col items-center">
             <i class="fab fa-facebook text-2xl mb-1"></i>
             <span class="text-xs">/gastroradar</span>
           </a>

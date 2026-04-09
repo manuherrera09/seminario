@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MVP Reseñas de Restaurantes - Inicio</title>
+  <title>GastroRadar - Inicio</title>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
@@ -11,34 +11,69 @@
   <!-- Font Awesome para los iconos de redes sociales -->
   <!--suppress HtmlUnknownTarget -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Estilos básicos para el carrusel de fondo */
+    .bg-carousel {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .bg-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1.5s ease-in-out;
+    }
+
+    .bg-slide.active {
+      opacity: 0.4; /* Mantener la misma opacidad que tenía la foto original */
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-blue-600 p-4 text-white shadow-lg relative z-10">
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-10">
   <div class="container mx-auto flex justify-between items-center">
-    <a href="index.html" class="text-xl font-bold hover:text-blue-200 transition">GastroRadar</a>
+    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">GastroRadar</a>
     <div class="flex items-center space-x-4">
-      <a href="index.html" class="hover:text-blue-200 transition">Inicio</a>
-      <a href="resena.html" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
-      <a href="perfil.html" class="hover:text-blue-200 transition ml-4">Mi Perfil</a>
-      <div id="user-status">
-        <span class="text-sm border-l border-blue-400 pl-4 ml-2">Iniciar sesión</span>
+      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+      <a href="perfil.html" class="hover:text-red-200 transition ml-4">Mi Perfil</a>
+      <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3">
+        <a href="login.html" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
+        <a href="registro.html" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
       </div>
     </div>
   </div>
 </nav>
 
-<div class="relative bg-gray-900">
-  <!-- Background image with overlay -->
-  <div class="absolute inset-0 z-0">
-    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante" class="w-full h-full object-cover opacity-40">
+<div class="relative bg-gray-900 overflow-hidden">
+  <!-- Background Carousel with overlay -->
+  <div class="bg-carousel" id="hero-carousel">
+    <!-- Restaurante 1 (Original) -->
+    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 1" class="bg-slide active">
+    <!-- Restaurante 2 -->
+    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 2" class="bg-slide">
+    <!-- Restaurante 3 -->
+    <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 3" class="bg-slide">
+    <!-- Restaurante 4 -->
+    <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 4" class="bg-slide">
+    <!-- Restaurante 5 -->
+    <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 5" class="bg-slide">
   </div>
 
   <div class="container mx-auto p-6 relative z-10">
     <div class="text-center py-20 md:py-32">
       <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">Bienvenido a GastroRadar</h1>
       <p class="text-xl md:text-2xl text-gray-200 mb-10 drop-shadow-md">Encuentra y comparte las mejores experiencias gastronómicas.</p>
-      <a href="resena.html" class="inline-block bg-blue-600 text-white text-lg font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-blue-700 hover:scale-105 transition transform duration-200">
+      <a href="resena.html" class="inline-block bg-[#c41200] text-white text-lg font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-[#a00e00] hover:scale-105 transition transform duration-200">
         ¡Escribe tu primera reseña!
       </a>
     </div>
@@ -108,7 +143,7 @@
   <div class="container mx-auto px-6">
     <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6">
       <div class="mb-6 md:mb-0 text-center md:text-left">
-        <h3 class="text-2xl font-bold text-blue-400">GastroRadar</h3>
+        <h3 class="text-2xl font-bold text-red-400">GastroRadar</h3>
         <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.</p>
       </div>
 
@@ -119,11 +154,11 @@
             <i class="fab fa-instagram text-2xl mb-1"></i>
             <span class="text-xs">@gastroradar</span>
           </a>
-          <a href="#" class="text-gray-400 hover:text-blue-400 transition-colors duration-300 flex flex-col items-center">
+          <a href="#" class="text-gray-400 hover:text-red-400 transition-colors duration-300 flex flex-col items-center">
             <i class="fab fa-twitter text-2xl mb-1"></i>
             <span class="text-xs">@gastroradar</span>
           </a>
-          <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300 flex flex-col items-center">
+          <a href="#" class="text-gray-400 hover:text-red-600 transition-colors duration-300 flex flex-col items-center">
             <i class="fab fa-facebook text-2xl mb-1"></i>
             <span class="text-xs">/gastroradar</span>
           </a>
@@ -141,7 +176,26 @@
 </footer>
 
 <script>
-  // Script básico para el home si fuera necesario después
+  // Lógica del Carrusel de Fondo
+  document.addEventListener('DOMContentLoaded', () => {
+    const slides = document.querySelectorAll('.bg-slide');
+    let currentSlide = 0;
+
+    // Función para cambiar a la siguiente imagen
+    const nextSlide = () => {
+      // Ocultar la imagen actual
+      slides[currentSlide].classList.remove('active');
+
+      // Calcular el índice de la siguiente (volver a 0 si es la última)
+      currentSlide = (currentSlide + 1) % slides.length;
+
+      // Mostrar la nueva imagen
+      slides[currentSlide].classList.add('active');
+    };
+
+    // Cambiar imagen cada 5 segundos
+    setInterval(nextSlide, 5000);
+  });
 </script>
 </body>
 </html>
