@@ -32,16 +32,23 @@
   <main class="container mx-auto p-6 flex-grow">
 
     <!-- Encabezado del Perfil -->
-    <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
+    <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative">
 
       <!-- Contenedor de la foto de perfil -->
-      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group">
+      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group mt-2 md:mt-0">
         <i id="profile-icon" class="fas fa-user"></i>
         <img id="profile-image" src="" alt="Foto de perfil" class="w-full h-full object-cover hidden">
       </div>
 
       <div class="text-center md:text-left flex-grow">
-        <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+            <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
+            <!-- Insignia del usuario -->
+            <div id="user-badge-container" class="hidden">
+               <span id="user-badge" class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-semibold border border-gray-200"><i class="fas fa-star mr-1"></i> Calculando...</span>
+            </div>
+        </div>
+
         <p class="text-gray-500 mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
         <p class="text-gray-500 mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Recientemente</p>
 
@@ -79,9 +86,9 @@
             </div>
         </div>
       </div>
-      <div class="shrink-0">
-         <button id="edit-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center">
-            <i class="fas fa-edit mr-2"></i> Editar Perfil
+      <div class="absolute top-4 right-4 md:relative md:top-0 md:right-0 shrink-0">
+         <button id="edit-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center text-sm md:text-base">
+            <i class="fas fa-edit md:mr-2"></i> <span class="hidden md:inline">Editar Perfil</span>
          </button>
       </div>
     </div>
@@ -96,13 +103,6 @@
              <ul class="space-y-3">
                  <li class="text-gray-500 text-sm">Próximamente...</li>
              </ul>
-          </div>
-
-          <div class="bg-white p-6 rounded-lg shadow-md">
-             <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Insignias</h3>
-             <div class="flex flex-wrap gap-2">
-                 <span class="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold border border-yellow-200"><i class="fas fa-star mr-1"></i> Nuevo Crítico</span>
-             </div>
           </div>
       </div>
 
@@ -239,7 +239,7 @@
     // Configurar los eventos de edición de perfil
     configurarEdicionPerfil();
 
-    // Cargar historial de reseñas
+    // Cargar historial de reseñas y calcular insignia
     cargarHistorialResenas();
   });
 
@@ -329,15 +329,46 @@
   }
 
   // =========================================================================
-  // 4. CARGAR HISTORIAL DE RESEÑAS
+  // 4. LÓGICA DE INSIGNIAS Y CARGA DE RESEÑAS
   // =========================================================================
+
+  function calcularInsignia(cantidadResenas) {
+      let nombre = "Nuevo Crítico";
+      let colorClass = "bg-green-100 text-green-800 border-green-200"; // Verde (Nivel 1)
+      let icono = "fa-seedling";
+
+      if (cantidadResenas >= 6 && cantidadResenas <= 15) {
+          nombre = "Explorador Gastronómico";
+          colorClass = "bg-blue-100 text-blue-800 border-blue-200"; // Azul (Nivel 2)
+          icono = "fa-compass";
+      } else if (cantidadResenas >= 16 && cantidadResenas <= 35) {
+          nombre = "Crítico Intermedio";
+          colorClass = "bg-yellow-100 text-yellow-800 border-yellow-200"; // Amarillo (Nivel 3)
+          icono = "fa-star";
+      } else if (cantidadResenas >= 36 && cantidadResenas <= 75) {
+          nombre = "Crítico Experimentado";
+          colorClass = "bg-orange-100 text-orange-800 border-orange-200"; // Naranja (Nivel 4)
+          icono = "fa-fire";
+      } else if (cantidadResenas >= 76 && cantidadResenas < 150) {
+          nombre = "Experto Gastronómico";
+          colorClass = "bg-red-100 text-red-800 border-red-200"; // Rojo (Nivel 5)
+          icono = "fa-award";
+      } else if (cantidadResenas >= 150) {
+          nombre = "Referente TrueBite";
+          colorClass = "bg-purple-100 text-purple-800 border-purple-200"; // Morado (Nivel 6)
+          icono = "fa-crown";
+      }
+
+      return { nombre, colorClass, icono };
+  }
+
   async function cargarHistorialResenas() {
       const container = document.getElementById('mis-resenas');
       const vacioMsg = document.getElementById('mis-resenas-vacio');
       const statsResenas = document.getElementById('stats-resenas');
 
       try {
-          // Consultamos las reseñas del usuario, incluyendo el nombre del restaurante
+          // Consultamos las reseñas del usuario
           const { data: resenas, error } = await supabaseClient
               .from('resenas')
               .select(`
@@ -355,10 +386,21 @@
 
           if (error) throw error;
 
-          // Actualizamos la métrica en la parte superior
-          statsResenas.textContent = resenas ? resenas.length : 0;
+          const totalResenas = resenas ? resenas.length : 0;
 
-          if (resenas && resenas.length > 0) {
+          // Actualizamos la métrica en la parte superior
+          statsResenas.textContent = totalResenas;
+
+          // Calculamos y mostramos la insignia correspondiente
+          const badgeContainer = document.getElementById('user-badge-container');
+          const badgeSpan = document.getElementById('user-badge');
+          const insignia = calcularInsignia(totalResenas);
+
+          badgeSpan.className = `text-xs px-3 py-1 rounded-full font-semibold border shadow-sm ${insignia.colorClass}`;
+          badgeSpan.innerHTML = `<i class="fas ${insignia.icono} mr-1"></i> ${insignia.nombre}`;
+          badgeContainer.classList.remove('hidden');
+
+          if (totalResenas > 0) {
               // Si hay reseñas, quitamos el mensaje de "vacío"
               if (vacioMsg) vacioMsg.remove();
 
@@ -386,7 +428,7 @@
                   }
 
                   const divResena = document.createElement('div');
-                  divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4";
+                  divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white";
 
                   divResena.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
