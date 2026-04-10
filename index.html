@@ -71,9 +71,24 @@
   </div>
 
   <div class="container mx-auto p-6 relative z-10">
-    <div class="text-center py-20 md:py-32">
+    <div class="text-center py-10 md:py-24">
       <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">Bienvenido a GastroRadar</h1>
       <p class="text-xl md:text-2xl text-gray-200 mb-10 drop-shadow-md">Encuentra y comparte las mejores experiencias gastronómicas.</p>
+
+      <!-- Barra de búsqueda interactiva -->
+      <div class="max-w-2xl mx-auto mb-10 relative">
+        <div class="relative">
+          <input type="text" id="search-input" class="w-full py-4 pl-12 pr-4 text-gray-800 rounded-full shadow-xl focus:outline-none focus:ring-4 focus:ring-[#c41200] transition text-lg" placeholder="Busca un restaurante (ej. La Cabrera)...">
+          <i class="fas fa-search absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl"></i>
+        </div>
+        <!-- Contenedor de sugerencias (oculto por defecto) -->
+        <div id="search-suggestions" class="absolute w-full mt-2 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-20 text-left">
+          <ul id="suggestions-list" class="max-h-60 overflow-y-auto">
+            <!-- Las sugerencias se llenarán con JS -->
+          </ul>
+        </div>
+      </div>
+
       <a href="resena.html" class="inline-block bg-[#c41200] text-white text-lg font-semibold px-8 py-4 rounded-lg shadow-lg hover:bg-[#a00e00] hover:scale-105 transition transform duration-200">
         ¡Escribe tu primera reseña!
       </a>
@@ -187,6 +202,8 @@
   // @ts-ignore
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  let restaurantesCacheados = [];
+
   // =========================================================================
   // 2. LÓGICA DEL CARRUSEL DE FONDO Y AUTENTICACIÓN
   // =========================================================================
@@ -233,7 +250,97 @@
             window.location.reload(); // Recargamos la página al salir
         });
     }
+
+    // ---- Cargar lista de restaurantes para la búsqueda ----
+    cargarRestaurantesParaBusqueda();
   });
+
+  // =========================================================================
+  // 3. LÓGICA DE BARRA DE BÚSQUEDA
+  // =========================================================================
+  async function cargarRestaurantesParaBusqueda() {
+      try {
+          const { data, error } = await supabaseClient
+              .from('restaurantes')
+              .select('id, nombre');
+
+          if (error) throw error;
+
+          if (data) {
+              restaurantesCacheados = data;
+          }
+      } catch (err) {
+          console.error("Error al cargar restaurantes para búsqueda:", err);
+      }
+  }
+
+  const searchInput = document.getElementById('search-input');
+  const suggestionsContainer = document.getElementById('search-suggestions');
+  const suggestionsList = document.getElementById('suggestions-list');
+
+  searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+
+      // Si está vacío, ocultamos la lista
+      if (query === '') {
+          suggestionsContainer.classList.add('hidden');
+          return;
+      }
+
+      // Filtramos la lista de restaurantes en memoria
+      const coincidencias = restaurantesCacheados.filter(rest =>
+          rest.nombre.toLowerCase().includes(query)
+      );
+
+      mostrarSugerencias(coincidencias, query);
+  });
+
+  // Ocultar sugerencias si hace click afuera
+  document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+          suggestionsContainer.classList.add('hidden');
+      }
+  });
+
+  function mostrarSugerencias(resultados, query) {
+      suggestionsList.innerHTML = ''; // Limpiar anteriores
+
+      if (resultados.length === 0) {
+          const li = document.createElement('li');
+          li.className = 'px-4 py-3 text-gray-500 text-sm text-center';
+          li.textContent = 'No se encontraron restaurantes';
+          suggestionsList.appendChild(li);
+      } else {
+          // Mostrar hasta 7 resultados para no saturar
+          const topResultados = resultados.slice(0, 7);
+
+          topResultados.forEach(rest => {
+              const li = document.createElement('li');
+              li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center';
+
+              // Resaltar la coincidencia
+              const regex = new RegExp(`(${query})`, "gi");
+              const nombreResaltado = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+
+              li.innerHTML = `<i class="fas fa-utensils text-gray-400 mr-3"></i> ${nombreResaltado}`;
+
+              // Acción al hacer clic en un restaurante
+              li.addEventListener('click', () => {
+                  searchInput.value = rest.nombre;
+                  suggestionsContainer.classList.add('hidden');
+
+                  // Para el MVP: Al darle clic a un restaurante lo mandamos a dejar reseña de ese lugar
+                  // Opcionalmente podrías pasarlo por URL: window.location.href = `resena.html?rest_id=${rest.id}`;
+                  // De momento solo redirigimos a la página de reseña.
+                  window.location.href = 'resena.html';
+              });
+
+              suggestionsList.appendChild(li);
+          });
+      }
+
+      suggestionsContainer.classList.remove('hidden');
+  }
 </script>
 </body>
 </html>
