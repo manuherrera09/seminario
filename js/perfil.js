@@ -265,12 +265,15 @@ async function cargarHistorialResenas() {
         }
 
         const divResena = document.createElement('div');
-        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white";
+        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white cursor-pointer";
+        divResena.onclick = () => {
+            window.location.href = `restaurante.html?id=${resena.id_restaurante}`;
+        };
 
         divResena.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                       <div>
-                        <h3 class="font-bold text-lg text-[#c41200]">${nombreRestaurante}</h3>
+                        <h3 class="font-bold text-lg text-[#c41200] hover:underline">${nombreRestaurante}</h3>
                         <p class="text-xs text-gray-400">Escrita el ${fechaFormateada}</p>
                       </div>
                     </div>
@@ -334,7 +337,8 @@ function renderizarFavoritos() {
   container.innerHTML = '';
   currentFavoritos.forEach(id => {
     const li = document.createElement('li');
-    li.className = "flex items-center text-sm font-medium text-gray-700";
+    li.className = "flex items-center text-sm font-medium text-gray-700 cursor-pointer hover:underline hover:text-[#c41200]";
+    li.onclick = () => { window.location.href = `restaurante.html?id=${id}`; };
     li.innerHTML = `<i class="fas fa-heart text-[#c41200] text-xs mr-2"></i> ${getNombreRestaurante(id)}`;
     container.appendChild(li);
   });
@@ -479,8 +483,8 @@ function mostrarSugerenciasBusqueda(resultados, query, listElement, containerEle
       li.addEventListener('click', () => {
         inputElement.value = rest.nombre;
         containerElement.classList.add('hidden');
-        // Redirigir a reseña. Podrías pasar el ID como parámetro aquí: window.location.href = `resena.html?rest_id=${rest.id}`;
-        window.location.href = 'resena.html';
+        // Redirigir a la página de detalles del restaurante, pasando el ID en la URL
+        window.location.href = `restaurante.html?id=${rest.id}`;
       });
 
       listElement.appendChild(li);

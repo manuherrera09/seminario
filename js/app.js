@@ -23,7 +23,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentSlide = (currentSlide + 1) % slides.length;
     slides[currentSlide].classList.add('active');
   };
-  setInterval(nextSlide, 5000);
+  if (slides.length > 0) {
+    setInterval(nextSlide, 5000);
+  }
 
   // ---- Autenticación ----
   // Verificamos si hay una sesión activa
@@ -45,16 +47,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Actualizamos la barra de navegación superior
     const userStatusDiv = document.getElementById('user-status');
-    userStatusDiv.innerHTML = `
-            <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
-            <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
-        `;
+    if (userStatusDiv) {
+      userStatusDiv.innerHTML = `
+              <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
+              <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
+          `;
 
-    // Agregamos el evento al nuevo botón de cerrar sesión
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      await supabaseClient.auth.signOut();
-      window.location.reload(); // Recargamos la página al salir
-    });
+      // Agregamos el evento al nuevo botón de cerrar sesión
+      document.getElementById('logout-btn').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        window.location.reload(); // Recargamos la página al salir
+      });
+    }
   }
 
   // ---- Cargar lista de restaurantes para la búsqueda ----
@@ -84,31 +88,37 @@ const searchInput = document.getElementById('search-input');
 const suggestionsContainer = document.getElementById('search-suggestions');
 const suggestionsList = document.getElementById('suggestions-list');
 
-searchInput.addEventListener('input', (e) => {
-  const query = e.target.value.toLowerCase().trim();
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
 
-  // Si está vacío, ocultamos la lista
-  if (query === '') {
-    suggestionsContainer.classList.add('hidden');
-    return;
-  }
+    // Si está vacío, ocultamos la lista
+    if (query === '') {
+      suggestionsContainer.classList.add('hidden');
+      return;
+    }
 
-  // Filtramos la lista de restaurantes en memoria
-  const coincidencias = restaurantesCacheados.filter(rest =>
-    rest.nombre.toLowerCase().includes(query)
-  );
+    // Filtramos la lista de restaurantes en memoria
+    const coincidencias = restaurantesCacheados.filter(rest =>
+      rest.nombre.toLowerCase().includes(query)
+    );
 
-  mostrarSugerencias(coincidencias, query);
-});
+    mostrarSugerencias(coincidencias, query);
+  });
+}
 
 // Ocultar sugerencias si hace click afuera
 document.addEventListener('click', (e) => {
-  if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-    suggestionsContainer.classList.add('hidden');
+  if (searchInput && suggestionsContainer) {
+    if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+      suggestionsContainer.classList.add('hidden');
+    }
   }
 });
 
 function mostrarSugerencias(resultados, query) {
+  if (!suggestionsList || !suggestionsContainer) return;
+
   suggestionsList.innerHTML = ''; // Limpiar anteriores
 
   if (resultados.length === 0) {
@@ -135,10 +145,8 @@ function mostrarSugerencias(resultados, query) {
         searchInput.value = rest.nombre;
         suggestionsContainer.classList.add('hidden');
 
-        // Para el MVP: Al darle clic a un restaurante lo mandamos a dejar reseña de ese lugar
-        // Opcionalmente podrías pasarlo por URL: window.location.href = `resena.html?rest_id=${rest.id}`;
-        // De momento solo redirigimos a la página de reseña.
-        window.location.href = 'resena.html';
+        // Redirigir a la página de detalles del restaurante, pasando el ID en la URL
+        window.location.href = `restaurante.html?id=${rest.id}`;
       });
 
       suggestionsList.appendChild(li);
