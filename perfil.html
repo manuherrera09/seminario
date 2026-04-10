@@ -99,10 +99,26 @@
       <!-- Columna Izquierda: Actividad Reciente o Estadísticas -->
       <div class="lg:col-span-1 space-y-6">
           <div class="bg-white p-6 rounded-lg shadow-md">
-             <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Mis Restaurantes Favoritos</h3>
-             <ul class="space-y-3">
-                 <li class="text-gray-500 text-sm">Próximamente...</li>
+             <div class="flex justify-between items-center border-b pb-2 mb-4">
+                 <h3 class="text-lg font-bold text-gray-800">Mis Restaurantes Favoritos</h3>
+                 <button id="edit-favs-btn" class="text-sm text-[#c41200] hover:text-[#a00e00] hidden"><i class="fas fa-edit"></i> Editar</button>
+             </div>
+
+             <!-- Lista para mostrar favoritos -->
+             <ul class="space-y-3" id="mis-restaurantes-favoritos">
+                 <li class="text-gray-500 text-sm" id="mis-restaurantes-vacio">Cargando favoritos...</li>
              </ul>
+
+             <!-- Formulario para editar favoritos (Oculto) -->
+             <div id="favs-edit-container" class="hidden mt-4">
+                 <div class="space-y-2" id="favs-select-container">
+                     <!-- Selects se insertarán aquí dinámicamente -->
+                 </div>
+                 <div class="mt-4 flex gap-2">
+                     <button id="save-favs-btn" class="bg-[#c41200] text-white px-3 py-1 rounded text-sm font-semibold hover:bg-[#a00e00] transition">Guardar</button>
+                     <button id="cancel-favs-btn" class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-400 transition">Cancelar</button>
+                 </div>
+             </div>
           </div>
       </div>
 
@@ -174,6 +190,8 @@
   let currentUserId = null;
   let currentBio = "";
   let currentImageUrl = "";
+  let restaurantesList = [];
+  let currentFavoritos = [];
 
   // =========================================================================
   // 2. LÓGICA DE PERFIL Y AUTENTICACIÓN
@@ -184,21 +202,24 @@
     const { data: { session }, error } = await supabaseClient.auth.getSession();
 
     if (!session || !session.user) {
-        // Si no hay sesión, mandamos al usuario a loguearse
         window.location.href = 'login.html';
         return;
     }
 
     currentUserId = session.user.id;
 
-    // Buscamos su información en la tabla perfiles
+    // Cargar lista de todos los restaurantes para los selects
+    await cargarListaRestaurantes();
+
+    // Buscamos información del perfil (agregamos restaurantes_favoritos)
+    // NOTA: Para que esto funcione, debes crear un campo 'restaurantes_favoritos' tipo jsonb en tu tabla perfiles.
     const { data: perfilData, error: perfilError } = await supabaseClient
         .from('perfiles')
-        .select('nombre_usuario, biografia, imagen_url')
+        .select('nombre_usuario, biografia, imagen_url, restaurantes_favoritos')
         .eq('id', currentUserId)
         .single();
 
-    let userDisplayName = session.user.email; // Por defecto mostramos el email
+    let userDisplayName = session.user.email;
     let profileNameDisplay = "Usuario de GastroRadar";
 
     if (perfilData) {
@@ -207,24 +228,24 @@
              profileNameDisplay = perfilData.nombre_usuario;
          }
 
-         // Si tiene biografía, la mostramos
          if (perfilData.biografia && perfilData.biografia.trim() !== '') {
              currentBio = perfilData.biografia;
              mostrarBiografia(currentBio);
          }
 
-         // Si tiene imagen_url, la mostramos
          if (perfilData.imagen_url && perfilData.imagen_url.trim() !== '') {
              currentImageUrl = perfilData.imagen_url;
              mostrarImagenPerfil(currentImageUrl);
          }
+
+         if (perfilData.restaurantes_favoritos) {
+             currentFavoritos = Array.isArray(perfilData.restaurantes_favoritos) ? perfilData.restaurantes_favoritos : [];
+         }
     }
 
-    // Actualizamos la información principal en el DOM
     document.getElementById('profile-name').textContent = profileNameDisplay;
     document.getElementById('profile-email').innerHTML = `<i class="fas fa-envelope mr-2"></i>${session.user.email}`;
 
-    // Actualizamos la barra de navegación superior
     const userStatusDiv = document.getElementById('user-status');
     userStatusDiv.innerHTML = `
         <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
@@ -236,12 +257,15 @@
         window.location.href = 'index.html';
     });
 
-    // Configurar los eventos de edición de perfil
     configurarEdicionPerfil();
-
-    // Cargar historial de reseñas y calcular insignia
+    configurarEdicionFavoritos();
     cargarHistorialResenas();
+    renderizarFavoritos();
   });
+
+  // =========================================================================
+  // 3. FUNCIONES DE UI
+  // =========================================================================
 
   function mostrarBiografia(texto) {
       const bioContainer = document.getElementById('bio-container');
@@ -368,7 +392,6 @@
       const statsResenas = document.getElementById('stats-resenas');
 
       try {
-          // Consultamos las reseñas del usuario
           const { data: resenas, error } = await supabaseClient
               .from('resenas')
               .select(`
@@ -388,10 +411,8 @@
 
           const totalResenas = resenas ? resenas.length : 0;
 
-          // Actualizamos la métrica en la parte superior
           statsResenas.textContent = totalResenas;
 
-          // Calculamos y mostramos la insignia correspondiente
           const badgeContainer = document.getElementById('user-badge-container');
           const badgeSpan = document.getElementById('user-badge');
           const insignia = calcularInsignia(totalResenas);
@@ -401,20 +422,15 @@
           badgeContainer.classList.remove('hidden');
 
           if (totalResenas > 0) {
-              // Si hay reseñas, quitamos el mensaje de "vacío"
               if (vacioMsg) vacioMsg.remove();
-
-              // Limpiamos el contenedor (por si acaso) y construimos las tarjetas
               container.innerHTML = '';
 
               for (const resena of resenas) {
-                  // Formateamos la fecha (Ej: 15 de Octubre, 2024)
                   const fechaObj = new Date(resena.created_at);
                   const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
                       day: 'numeric', month: 'long', year: 'numeric'
                   });
 
-                  // El nombre del restaurante viene de otra consulta
                   let nombreRestaurante = 'Restaurante Desconocido';
                   if (resena.id_restaurante) {
                       const { data: restData, error: restError } = await supabaseClient
@@ -459,6 +475,134 @@
           if (vacioMsg) vacioMsg.textContent = "Hubo un error al cargar tus reseñas.";
       }
   }
+
+  // =========================================================================
+  // 5. LÓGICA DE FAVORITOS MANUALES
+  // =========================================================================
+
+  async function cargarListaRestaurantes() {
+      try {
+          const { data, error } = await supabaseClient
+              .from('restaurantes')
+              .select('id, nombre')
+              .order('nombre', { ascending: true });
+          if (error) throw error;
+          if (data) restaurantesList = data;
+      } catch (err) {
+          console.error("Error al cargar lista de restaurantes:", err);
+      }
+  }
+
+  function getNombreRestaurante(id) {
+      // Parsear a numero o string dependiendo de como esté guardado
+      const rest = restaurantesList.find(r => String(r.id) === String(id));
+      return rest ? rest.nombre : 'Desconocido';
+  }
+
+  function renderizarFavoritos() {
+      const container = document.getElementById('mis-restaurantes-favoritos');
+      const editBtn = document.getElementById('edit-favs-btn');
+
+      editBtn.classList.remove('hidden'); // Mostrar botón de editar
+
+      if (currentFavoritos.length === 0) {
+          container.innerHTML = '<li class="text-gray-500 text-sm">No has elegido ningún favorito aún.</li>';
+          return;
+      }
+
+      container.innerHTML = '';
+      currentFavoritos.forEach(id => {
+          const li = document.createElement('li');
+          li.className = "flex items-center text-sm font-medium text-gray-700";
+          li.innerHTML = `<i class="fas fa-heart text-[#c41200] text-xs mr-2"></i> ${getNombreRestaurante(id)}`;
+          container.appendChild(li);
+      });
+  }
+
+  function configurarEdicionFavoritos() {
+      const editBtn = document.getElementById('edit-favs-btn');
+      const listContainer = document.getElementById('mis-restaurantes-favoritos');
+      const editContainer = document.getElementById('favs-edit-container');
+      const selectContainer = document.getElementById('favs-select-container');
+      const btnSave = document.getElementById('save-favs-btn');
+      const btnCancel = document.getElementById('cancel-favs-btn');
+
+      editBtn.addEventListener('click', () => {
+          listContainer.classList.add('hidden');
+          editBtn.classList.add('hidden');
+          editContainer.classList.remove('hidden');
+
+          // Crear 5 selects
+          selectContainer.innerHTML = '';
+          for (let i = 0; i < 5; i++) {
+              const select = document.createElement('select');
+              select.className = "w-full border p-1 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] fav-select";
+              select.innerHTML = '<option value="">(Ninguno)</option>';
+
+              restaurantesList.forEach(rest => {
+                  const option = document.createElement('option');
+                  option.value = rest.id;
+                  option.textContent = rest.nombre;
+                  if (currentFavoritos[i] && String(currentFavoritos[i]) === String(rest.id)) {
+                      option.selected = true;
+                  }
+                  select.appendChild(option);
+              });
+
+              selectContainer.appendChild(select);
+          }
+      });
+
+      btnCancel.addEventListener('click', () => {
+          editContainer.classList.add('hidden');
+          listContainer.classList.remove('hidden');
+          editBtn.classList.remove('hidden');
+      });
+
+      btnSave.addEventListener('click', async () => {
+          const selects = document.querySelectorAll('.fav-select');
+          const nuevosFavoritos = [];
+
+          selects.forEach(select => {
+              if (select.value) {
+                  // Castear a numero si tu ID es numerico, sino dejarlo como string
+                  // Aquí lo pasamos como entero por si Supabase lo requiere así en tu base
+                  const val = isNaN(Number(select.value)) ? select.value : Number(select.value);
+                  nuevosFavoritos.push(val);
+              }
+          });
+
+          // Filtrar duplicados por si eligieron el mismo dos veces
+          const favoritosUnicos = [...new Set(nuevosFavoritos)];
+
+          btnSave.disabled = true;
+          btnSave.textContent = '...';
+
+          try {
+              const { error } = await supabaseClient
+                  .from('perfiles')
+                  .update({ restaurantes_favoritos: favoritosUnicos })
+                  .eq('id', currentUserId);
+
+              if (error) throw error;
+
+              currentFavoritos = favoritosUnicos;
+              editContainer.classList.add('hidden');
+              listContainer.classList.remove('hidden');
+
+              renderizarFavoritos();
+
+          } catch (err) {
+              console.error('Error al actualizar favoritos:', err);
+              alert("Ocurrió un error al guardar tus favoritos.");
+          } finally {
+              btnSave.disabled = false;
+              btnSave.textContent = 'Guardar';
+              editBtn.classList.remove('hidden');
+          }
+      });
+  }
+
 </script>
 </body>
 </html>
