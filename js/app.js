@@ -63,6 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ---- Cargar lista de restaurantes para la búsqueda ----
   cargarRestaurantesParaBusqueda();
+
+  // ---- Cargar reseñas recientes si estamos en el index ----
+  if (document.getElementById('recent-reviews-container')) {
+    cargarResenasRecientes();
+  }
 });
 
 // =========================================================================
@@ -154,4 +159,72 @@ function mostrarSugerencias(resultados, query) {
   }
 
   suggestionsContainer.classList.remove('hidden');
+}
+
+// =========================================================================
+// 4. LÓGICA DE RESEÑAS RECIENTES (Index)
+// =========================================================================
+async function cargarResenasRecientes() {
+  const container = document.getElementById('recent-reviews-container');
+  if (!container) return;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('resenas')
+      .select(`
+        *,
+        restaurantes (nombre),
+        perfiles (nombre_usuario)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(9);
+
+    if (error) throw error;
+
+    container.innerHTML = '';
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No hay reseñas recientes aún.</p>';
+      return;
+    }
+
+    data.forEach(resena => {
+      const restauranteNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante Desconocido';
+      const usuarioNombre = resena.perfiles && resena.perfiles.nombre_usuario ? resena.perfiles.nombre_usuario : 'Usuario Anónimo';
+
+      const ratingTotal = resena.puntuacion_general ? Number(resena.puntuacion_general).toFixed(1) : 'N/A';
+
+      const comidaRating = resena.calidad_comida ? resena.calidad_comida + ' ★' : 'N/A';
+      const atencionRating = resena.atencion ? resena.atencion + ' ★' : 'N/A';
+      const precioRating = resena.precio ? resena.precio + ' ★' : 'N/A';
+
+      const resenaHTML = `
+        <div class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition flex flex-col h-full" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="font-bold text-lg text-gray-800">${restauranteNombre}</h3>
+              <p class="text-sm text-gray-500">Por ${usuarioNombre}</p>
+            </div>
+            <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
+          </div>
+          <p class="text-gray-700 mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
+          <div class="text-sm text-gray-500 grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-gray-100">
+             <span>Comida: ${comidaRating}</span>
+             <span>Atención: ${atencionRating}</span>
+             <span>Precio: ${precioRating}</span>
+          </div>
+        </div>
+      `;
+      container.innerHTML += resenaHTML;
+    });
+
+  } catch (err) {
+    console.error("Error al cargar reseñas recientes:", err);
+    // Mostrar el error completo en pantalla para depuración
+    container.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">
+      <strong>Error al cargar las reseñas:</strong><br/>
+      ${err.message || JSON.stringify(err)}
+      <br/><em>(Abre la consola para más detalles)</em>
+    </p>`;
+  }
 }
