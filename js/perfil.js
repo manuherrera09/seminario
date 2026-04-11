@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .single();
 
   let userDisplayName = session.user.email;
-  let profileNameDisplay = "Usuario de GastroRadar";
+  let profileNameDisplay = "Usuario de TrackEat";
 
   if (perfilData) {
     if (perfilData.nombre_usuario) {
@@ -199,7 +199,7 @@ function calcularInsignia(cantidadResenas) {
     colorClass = "bg-red-100 text-red-800 border-red-200"; // Rojo (Nivel 5)
     icono = "fa-award";
   } else if (cantidadResenas >= 150) {
-    nombre = "Referente TrueBite";
+    nombre = "Referente TrackEat";
     colorClass = "bg-purple-100 text-purple-800 border-purple-200"; // Morado (Nivel 6)
     icono = "fa-crown";
   }

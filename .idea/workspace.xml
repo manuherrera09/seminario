@@ -7,7 +7,12 @@
     <list default="true" id="ee179bec-4b88-4202-800a-425882757627" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/app.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/perfil.html" beforeDir="false" afterPath="$PROJECT_DIR$/perfil.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registro.html" beforeDir="false" afterPath="$PROJECT_DIR$/registro.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resena.html" beforeDir="false" afterPath="$PROJECT_DIR$/resena.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/restaurante.html" beforeDir="false" afterPath="$PROJECT_DIR$/restaurante.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -100,7 +105,7 @@
       <workItem from="1775844610626" duration="481000" />
       <workItem from="1775845108724" duration="493000" />
       <workItem from="1775845682622" duration="9557000" />
-      <workItem from="1775934301921" duration="2635000" />
+      <workItem from="1775934301921" duration="3416000" />
     </task>
     <servers />
   </component>
