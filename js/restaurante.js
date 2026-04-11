@@ -64,6 +64,19 @@ async function cargarDetallesRestaurante() {
         // Mostrar datos en el DOM
         document.getElementById('restaurante-nombre').textContent = restaurante.nombre;
 
+        // Lógica de la imagen de portada
+        const imagenEl = document.getElementById('restaurante-imagen');
+        const noImagenEl = document.getElementById('restaurante-no-imagen');
+
+        if (restaurante.imagen_url && restaurante.imagen_url.trim() !== '') {
+            imagenEl.src = restaurante.imagen_url;
+            imagenEl.classList.remove('hidden');
+            noImagenEl.classList.add('hidden');
+        } else {
+            imagenEl.classList.add('hidden');
+            noImagenEl.classList.remove('hidden');
+        }
+
         // Si tienes más campos en la tabla, puedes asignarlos aquí.
         // Ej: document.getElementById('restaurante-ubicacion').innerHTML = `<i class="fas fa-map-marker-alt mr-2 text-red-400"></i> ${restaurante.direccion}`;
 
