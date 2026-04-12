@@ -303,11 +303,11 @@ function renderizarResenas(sortMode) {
         divResena.innerHTML = `
             <div class="flex justify-between items-start mb-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center font-bold">
+                    <div class="w-10 h-10 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center font-bold cursor-pointer hover:bg-red-200 transition" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'" title="Ver perfil de ${nombreAutor}">
                         ${nombreAutor.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <h4 class="font-bold text-gray-800">${nombreAutor}</h4>
+                        <h4 class="font-bold text-gray-800 cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
                         <p class="text-xs text-gray-500">${fechaFormateada}</p>
                     </div>
                 </div>

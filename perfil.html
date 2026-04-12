@@ -64,6 +64,10 @@
             <div id="user-badge-container" class="hidden">
                <span id="user-badge" class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-semibold border border-gray-200"><i class="fas fa-star mr-1"></i> Calculando...</span>
             </div>
+            <!-- Botón de seguir (solo visible si vemos perfil ajeno) -->
+            <button id="follow-btn" class="hidden text-sm bg-[#c41200] text-white px-4 py-1.5 rounded-full font-semibold hover:bg-[#a00e00] transition ml-2 shadow-sm">
+                Seguir
+            </button>
         </div>
 
         <p class="text-gray-500 mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
@@ -92,19 +96,23 @@
             </div>
         </div>
 
-        <div class="mt-4 flex justify-center md:justify-start gap-4">
+        <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
             <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
                 <span class="block text-2xl font-bold text-[#c41200]" id="stats-resenas">0</span>
                 <span class="text-xs text-gray-500 uppercase tracking-wider">Reseñas</span>
             </div>
-            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
-                <span class="block text-2xl font-bold text-[#c41200]">0</span>
-                <span class="text-xs text-gray-500 uppercase tracking-wider">Me gusta</span>
+            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="followers-container">
+                <span class="block text-2xl font-bold text-[#c41200]" id="stats-seguidores">0</span>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">Seguidores</span>
+            </div>
+            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="following-container">
+                <span class="block text-2xl font-bold text-[#c41200]" id="stats-seguidos">0</span>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">Seguidos</span>
             </div>
         </div>
       </div>
       <div class="absolute top-4 right-4 md:relative md:top-0 md:right-0 shrink-0">
-         <button id="edit-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center text-sm md:text-base">
+         <button id="edit-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition flex items-center text-sm md:text-base hidden">
             <i class="fas fa-edit md:mr-2"></i> <span class="hidden md:inline">Editar Perfil</span>
          </button>
       </div>
@@ -117,7 +125,7 @@
       <div class="lg:col-span-1 space-y-6">
           <div class="bg-white p-6 rounded-lg shadow-md">
              <div class="flex justify-between items-center border-b pb-2 mb-4">
-                 <h3 class="text-lg font-bold text-gray-800">Mis Restaurantes Favoritos</h3>
+                 <h3 class="text-lg font-bold text-gray-800">Restaurantes Favoritos</h3>
                  <button id="edit-favs-btn" class="text-sm text-[#c41200] hover:text-[#a00e00] hidden"><i class="fas fa-edit"></i> Editar</button>
              </div>
 
@@ -143,12 +151,12 @@
       <div class="lg:col-span-2">
         <div class="bg-white p-6 rounded-lg shadow-md">
           <div class="flex justify-between items-center border-b pb-2 mb-6">
-              <h2 class="text-2xl font-bold text-gray-800">Mi Historial de Reseñas</h2>
+              <h2 class="text-2xl font-bold text-gray-800">Historial de Reseñas</h2>
               <span class="text-sm text-gray-500">Ordenadas por más recientes</span>
           </div>
 
           <div class="space-y-6" id="mis-resenas">
-             <p class="text-gray-500 text-center py-4" id="mis-resenas-vacio">Aún no has publicado reseñas.</p>
+             <p class="text-gray-500 text-center py-4" id="mis-resenas-vacio">Cargando reseñas...</p>
           </div>
 
         </div>
@@ -156,6 +164,20 @@
     </div>
 
   </main>
+</div>
+
+<!-- Modal para ver Seguidores/Seguidos -->
+<div id="follows-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-bold" id="follows-modal-title">Usuarios</h3>
+            <button id="close-follows-modal" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto flex-grow" id="follows-list-container">
+            <!-- Lista de usuarios se cargará aquí -->
+            <p class="text-center text-gray-500 text-sm">Cargando...</p>
+        </div>
+    </div>
 </div>
 
 <footer class="bg-gray-800 text-white pt-10 pb-6 mt-auto w-full">
