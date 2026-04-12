@@ -626,12 +626,16 @@ function configurarBotonSeguir() {
                     if (error) throw error;
                     isFollowingUser = false;
                 } else {
-                    // Seguir
-                    const { error } = await supabaseClient
-                        .from('follows')
-                        .insert({ follower_id: currentSessionUserId, following_id: profileUserId });
+                    // Seguir: primero verificar si ya lo sigo para evitar el error de unique constraint
+                    const yaSigo = seguidoresData.some(f => f.id === currentSessionUserId);
 
-                    if (error) throw error;
+                    if (!yaSigo) {
+                        const { error } = await supabaseClient
+                            .from('follows')
+                            .insert({ follower_id: currentSessionUserId, following_id: profileUserId });
+
+                        if (error) throw error;
+                    }
                     isFollowingUser = true;
                 }
 
