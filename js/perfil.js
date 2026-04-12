@@ -640,7 +640,14 @@ function configurarBotonSeguir() {
                 actualizarBotonSeguirUI();
             } catch(err) {
                 console.error("Error al seguir/dejar de seguir:", err);
-                alert("Error al procesar la acción.");
+
+                // Mostrar alerta con el error exacto para debugear el RLS
+                let errMsg = "Error desconocido.";
+                if (err.message) errMsg = err.message;
+                else if (err.details) errMsg = err.details;
+                else if (typeof err === 'string') errMsg = err;
+
+                alert(`Error al procesar la acción.\n\nDetalle: ${errMsg}`);
             } finally {
                 followBtn.disabled = false;
             }
