@@ -128,13 +128,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       editProfileBtn.classList.remove('hidden');
       configurarEdicionPerfil();
       configurarEdicionFavoritos();
+  } else if (currentSessionUserId) {
+      // Si NO es nuestro perfil y estamos logueados, mostramos el botón seguir
+      const followBtn = document.getElementById('follow-btn');
+      if(followBtn) followBtn.classList.remove('hidden');
+      // La configuración del botón seguir se llama DESPUÉS de cargar seguidores
   }
 
-  // Cargar seguidores y seguidos
+  // Cargar seguidores y seguidos (esto actualizará el DOM de contadores e isFollowingUser)
   await cargarSeguidores();
-  configurarBotonSeguir();
-  configurarModalesFollows();
 
+  // AHORA sí configuramos el botón para que use isFollowingUser correcto
+  if (!isOwnProfile && currentSessionUserId) {
+      configurarBotonSeguir();
+  }
+
+  configurarModalesFollows();
   cargarHistorialResenas();
   renderizarFavoritos();
   configurarBarraDeBusqueda();
@@ -569,36 +578,46 @@ async function cargarSeguidores() {
         // Traer a quienes siguen al usuario actual (Seguidores)
         const { data: followers, error: errFollowers } = await supabaseClient
             .from('follows')
-            .select(`
-                follower_id,
-                perfiles:follower_id (id, nombre_usuario, imagen_url)
-            `)
+            .select('follower_id')
             .eq('following_id', profileUserId);
 
         if (errFollowers) throw errFollowers;
 
-        // Formatear array de seguidores
-        seguidoresData = followers.map(f => f.perfiles).filter(Boolean);
-        document.getElementById('stats-seguidores').textContent = seguidoresData.length;
-
-        // Comprobar si YO sigo a este usuario (por si ya está en la BD)
+        // Comprobar si YO sigo a este usuario
         if (currentSessionUserId && !isOwnProfile) {
-            // Buscamos si currentSessionUserId (mi ID) está entre los follower_id
             isFollowingUser = followers.some(f => f.follower_id === currentSessionUserId);
         }
+
+        const followerIds = followers.map(f => f.follower_id);
+        if (followerIds.length > 0) {
+            const { data: pFollowers } = await supabaseClient
+                .from('perfiles')
+                .select('id, nombre_usuario, imagen_url')
+                .in('id', followerIds);
+            seguidoresData = pFollowers || [];
+        } else {
+            seguidoresData = [];
+        }
+        document.getElementById('stats-seguidores').textContent = seguidoresData.length;
 
         // Traer a quienes sigue el usuario actual (Seguidos)
         const { data: following, error: errFollowing } = await supabaseClient
             .from('follows')
-            .select(`
-                following_id,
-                perfiles:following_id (id, nombre_usuario, imagen_url)
-            `)
+            .select('following_id')
             .eq('follower_id', profileUserId);
 
         if (errFollowing) throw errFollowing;
 
-        seguidosData = following.map(f => f.perfiles).filter(Boolean);
+        const followingIds = following.map(f => f.following_id);
+        if (followingIds.length > 0) {
+            const { data: pFollowing } = await supabaseClient
+                .from('perfiles')
+                .select('id, nombre_usuario, imagen_url')
+                .in('id', followingIds);
+            seguidosData = pFollowing || [];
+        } else {
+            seguidosData = [];
+        }
         document.getElementById('stats-seguidos').textContent = seguidosData.length;
 
     } catch(err) {
@@ -609,16 +628,21 @@ async function cargarSeguidores() {
 function configurarBotonSeguir() {
     const followBtn = document.getElementById('follow-btn');
 
+    if (!followBtn) return;
+
     // Solo mostramos el botón si NO es mi propio perfil y estoy logueado
     if (!isOwnProfile && currentSessionUserId) {
-        followBtn.classList.remove('hidden');
+        // Actualizamos visualmente el botón
         actualizarBotonSeguirUI();
 
-        followBtn.addEventListener('click', async () => {
-            followBtn.disabled = true;
+        // Evitamos que se acumulen event listeners reemplazando el botón por un clon
+        const newBtn = followBtn.cloneNode(true);
+        followBtn.parentNode.replaceChild(newBtn, followBtn);
+
+        newBtn.addEventListener('click', async () => {
+            newBtn.disabled = true;
             try {
-                // Hacemos una comprobación directa a la BD para estar 100% seguros
-                // de si ya lo seguimos o no, antes de intentar insertar o borrar.
+                // Comprobación directa a la BD
                 const { data: verifyData, error: verifyError } = await supabaseClient
                     .from('follows')
                     .select('*')
@@ -647,7 +671,7 @@ function configurarBotonSeguir() {
                     isFollowingUser = true;
                 }
 
-                // Recargar info
+                // Recargar la info completa para actualizar contadores y el estado del botón
                 await cargarSeguidores();
                 actualizarBotonSeguirUI();
             } catch(err) {
@@ -661,7 +685,7 @@ function configurarBotonSeguir() {
 
                 alert(`Error al procesar la acción.\n\nDetalle: ${errMsg}`);
             } finally {
-                followBtn.disabled = false;
+                newBtn.disabled = false;
             }
         });
     }
@@ -669,6 +693,8 @@ function configurarBotonSeguir() {
 
 function actualizarBotonSeguirUI() {
     const followBtn = document.getElementById('follow-btn');
+    if (!followBtn) return;
+
     if (isFollowingUser) {
         followBtn.textContent = "Siguiendo";
         followBtn.className = "text-sm bg-gray-200 text-gray-800 px-4 py-1.5 rounded-full font-semibold hover:bg-gray-300 transition ml-2 shadow-sm border border-gray-300";
@@ -684,6 +710,8 @@ function configurarModalesFollows() {
     const listContainer = document.getElementById('follows-list-container');
     const closeBtn = document.getElementById('close-follows-modal');
 
+    if (!modal) return;
+
     // Cerrar modal
     closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
@@ -695,14 +723,24 @@ function configurarModalesFollows() {
     });
 
     // Abrir Seguidores
-    document.getElementById('followers-container').addEventListener('click', () => {
-        abrirModalUsuarios("Seguidores", seguidoresData);
-    });
+    const followersContainer = document.getElementById('followers-container');
+    if (followersContainer) {
+        const newFc = followersContainer.cloneNode(true);
+        followersContainer.parentNode.replaceChild(newFc, followersContainer);
+        newFc.addEventListener('click', () => {
+            abrirModalUsuarios("Seguidores", seguidoresData);
+        });
+    }
 
     // Abrir Seguidos
-    document.getElementById('following-container').addEventListener('click', () => {
-        abrirModalUsuarios("Siguiendo", seguidosData);
-    });
+    const followingContainer = document.getElementById('following-container');
+    if (followingContainer) {
+        const newFic = followingContainer.cloneNode(true);
+        followingContainer.parentNode.replaceChild(newFic, followingContainer);
+        newFic.addEventListener('click', () => {
+            abrirModalUsuarios("Siguiendo", seguidosData);
+        });
+    }
 
     function abrirModalUsuarios(titulo, listaUsuarios) {
         modalTitle.textContent = titulo;
