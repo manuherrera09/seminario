@@ -143,6 +143,42 @@ async function cargarDetallesRestaurante() {
             ubicacionEl.innerHTML = `<i class="fas fa-map-marker-alt mr-2 text-red-400"></i> Ubicación no especificada`;
         }
 
+        // Mostrar Redes Sociales y Web
+        const redesContainer = document.getElementById('restaurante-enlaces');
+        const linksContainer = document.getElementById('contenedor-links');
+
+        let hasLinks = false;
+        linksContainer.innerHTML = ''; // Limpiar anteriores por si acaso
+
+        if (restaurante.url_website && restaurante.url_website.trim() !== '') {
+            hasLinks = true;
+            linksContainer.innerHTML += `
+                <a href="${restaurante.url_website}" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-700 hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
+                    <div class="w-8 flex justify-center"><i class="fas fa-globe text-xl text-blue-500"></i></div>
+                    <span class="ml-2 font-medium">Sitio Web Oficial</span>
+                    <i class="fas fa-external-link-alt ml-auto text-xs text-gray-400"></i>
+                </a>
+            `;
+        }
+
+        if (restaurante.url_ig && restaurante.url_ig.trim() !== '') {
+            hasLinks = true;
+            linksContainer.innerHTML += `
+                <a href="${restaurante.url_ig}" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-700 hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
+                    <div class="w-8 flex justify-center"><i class="fab fa-instagram text-2xl text-pink-600"></i></div>
+                    <span class="ml-2 font-medium">Instagram</span>
+                    <i class="fas fa-external-link-alt ml-auto text-xs text-gray-400"></i>
+                </a>
+            `;
+        }
+
+        // Si existe al menos un link, mostramos la tarjeta
+        if (hasLinks) {
+            redesContainer.classList.remove('hidden');
+        } else {
+            redesContainer.classList.add('hidden');
+        }
+
         // 2. Obtener todas las reseñas de este restaurante
         // Hacemos JOIN con perfiles para obtener el nombre del usuario
         const { data: resenas, error: resenasError } = await supabaseClient

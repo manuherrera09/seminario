@@ -139,7 +139,7 @@
             <!-- Detalles del restaurante -->
             <div class="bg-white p-6 rounded-lg shadow-md">
                <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Información</h3>
-               <ul class="space-y-3 text-sm text-gray-600">
+               <ul class="space-y-3 text-sm text-gray-600" id="lista-informacion">
                    <li class="flex items-start">
                        <i class="fas fa-utensils mt-1 w-6 text-center text-gray-400"></i>
                        <span id="restaurante-tipo">Tipo de cocina no especificado</span>
@@ -154,6 +154,15 @@
                    </li>
                </ul>
             </div>
+
+            <!-- Redes sociales / Enlaces del restaurante -->
+            <div id="restaurante-enlaces" class="bg-white p-6 rounded-lg shadow-md hidden">
+                <h3 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">Sitios Web</h3>
+                <div class="flex flex-col gap-3" id="contenedor-links">
+                    <!-- Los enlaces se agregarán con JS -->
+                </div>
+            </div>
+
         </div>
 
         <!-- Columna Derecha: Reseñas -->
