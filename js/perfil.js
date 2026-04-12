@@ -581,8 +581,9 @@ async function cargarSeguidores() {
         seguidoresData = followers.map(f => f.perfiles).filter(Boolean);
         document.getElementById('stats-seguidores').textContent = seguidoresData.length;
 
-        // Comprobar si YO sigo a este usuario
+        // Comprobar si YO sigo a este usuario (por si ya está en la BD)
         if (currentSessionUserId && !isOwnProfile) {
+            // Buscamos si currentSessionUserId (mi ID) está entre los follower_id
             isFollowingUser = followers.some(f => f.follower_id === currentSessionUserId);
         }
 
@@ -616,8 +617,19 @@ function configurarBotonSeguir() {
         followBtn.addEventListener('click', async () => {
             followBtn.disabled = true;
             try {
-                if (isFollowingUser) {
-                    // Dejar de seguir
+                // Hacemos una comprobación directa a la BD para estar 100% seguros
+                // de si ya lo seguimos o no, antes de intentar insertar o borrar.
+                const { data: verifyData, error: verifyError } = await supabaseClient
+                    .from('follows')
+                    .select('*')
+                    .match({ follower_id: currentSessionUserId, following_id: profileUserId });
+
+                if (verifyError) throw verifyError;
+
+                const actuallyFollowing = verifyData && verifyData.length > 0;
+
+                if (actuallyFollowing) {
+                    // DEJAR DE SEGUIR
                     const { error } = await supabaseClient
                         .from('follows')
                         .delete()
@@ -626,16 +638,12 @@ function configurarBotonSeguir() {
                     if (error) throw error;
                     isFollowingUser = false;
                 } else {
-                    // Seguir: primero verificar si ya lo sigo para evitar el error de unique constraint
-                    const yaSigo = seguidoresData.some(f => f.id === currentSessionUserId);
+                    // SEGUIR
+                    const { error } = await supabaseClient
+                        .from('follows')
+                        .insert({ follower_id: currentSessionUserId, following_id: profileUserId });
 
-                    if (!yaSigo) {
-                        const { error } = await supabaseClient
-                            .from('follows')
-                            .insert({ follower_id: currentSessionUserId, following_id: profileUserId });
-
-                        if (error) throw error;
-                    }
+                    if (error) throw error;
                     isFollowingUser = true;
                 }
 
