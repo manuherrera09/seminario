@@ -77,8 +77,71 @@ async function cargarDetallesRestaurante() {
             noImagenEl.classList.remove('hidden');
         }
 
-        // Si tienes más campos en la tabla, puedes asignarlos aquí.
-        // Ej: document.getElementById('restaurante-ubicacion').innerHTML = `<i class="fas fa-map-marker-alt mr-2 text-red-400"></i> ${restaurante.direccion}`;
+        // Llenar información de la columna izquierda (categoría, horario, teléfono)
+        const tipoEl = document.getElementById('restaurante-tipo');
+        const horarioEl = document.getElementById('restaurante-horario');
+        const telefonoEl = document.getElementById('restaurante-telefono');
+
+        if (restaurante.categoria) {
+            tipoEl.textContent = restaurante.categoria;
+        }
+
+        if (restaurante.horario) {
+            let horarioHTML = '<ul class="mt-1 space-y-1">';
+            // Como es JSONB, restaurante.horario ya debería ser un objeto de JS
+            const dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+            // Convertir las claves del JSON a un formato que podamos comparar (ignorar mayúsculas)
+            const horarioNormalizado = {};
+            if (typeof restaurante.horario === 'object') {
+                for (const [key, value] of Object.entries(restaurante.horario)) {
+                    horarioNormalizado[key.toLowerCase()] = value;
+                }
+            }
+
+            dias.forEach(dia => {
+                const diaKey = dia.toLowerCase();
+                if (horarioNormalizado[diaKey]) {
+                    horarioHTML += `<li><span class="font-medium inline-block w-20">${dia}:</span> ${horarioNormalizado[diaKey]}</li>`;
+                }
+            });
+            horarioHTML += '</ul>';
+
+            // Si encontró al menos un día, mostramos la lista, sino el raw o nada
+            if (horarioHTML !== '<ul class="mt-1 space-y-1"></ul>') {
+                 // Quitamos la clase 'flex items-start' del li padre para que la lista de horarios se vea bien debajo del ícono de reloj
+                 const liPadre = horarioEl.closest('li');
+                 if(liPadre) {
+                     liPadre.classList.remove('items-start');
+                     liPadre.classList.add('items-baseline');
+                 }
+                 horarioEl.innerHTML = `<span class="font-semibold block mb-1">Horarios:</span>${horarioHTML}`;
+            } else {
+                 horarioEl.textContent = "Horarios no estructurados";
+            }
+        }
+
+        if (restaurante.telefono) {
+            telefonoEl.textContent = restaurante.telefono;
+        }
+
+        // Mostrar y linkear la dirección en Google Maps
+        const ubicacionEl = document.getElementById('restaurante-ubicacion');
+        if (restaurante.direccion && restaurante.direccion.trim() !== '') {
+            // Creamos un link de búsqueda en Google Maps basado en el nombre y la dirección
+            const queryParaMaps = encodeURIComponent(`${restaurante.nombre} ${restaurante.direccion}`);
+            const linkGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${queryParaMaps}`;
+
+            ubicacionEl.innerHTML = `
+                <a href="${linkGoogleMaps}" target="_blank" rel="noopener noreferrer" class="hover:text-white hover:underline transition flex items-center group">
+                    <i class="fas fa-map-marker-alt mr-2 text-red-400 group-hover:text-red-300"></i>
+                    ${restaurante.direccion}
+                    <i class="fas fa-external-link-alt ml-2 text-xs opacity-50 group-hover:opacity-100"></i>
+                </a>
+            `;
+        } else {
+            ubicacionEl.innerHTML = `<i class="fas fa-map-marker-alt mr-2 text-red-400"></i> Ubicación no especificada`;
+        }
 
         // 2. Obtener todas las reseñas de este restaurante
         // Hacemos JOIN con perfiles para obtener el nombre del usuario
