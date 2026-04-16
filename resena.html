@@ -12,24 +12,55 @@
   <!--suppress HtmlUnknownTarget -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .star-rating {
-      display: flex;
+    /* CSS 100% preciso para Medias Estrellas usando un SVG de fondo en lugar de caracteres Unicode variables */
+    .rating-group {
+      display: inline-flex;
       flex-direction: row-reverse;
-      justify-content: flex-end;
+      position: relative;
     }
-    .star-rating input {
+
+    .rating-group input {
       display: none;
     }
-    .star-rating label {
+
+    /* Usamos un FontAwesome SVG en Base64 para garantizar la misma proporción en todos los navegadores */
+    /* Estrella gris (vacía) */
+    .rating-group label {
       cursor: pointer;
-      font-size: 1.5rem;
-      color: #d1d5db; /* gray-300 */
-      transition: color 0.2s;
+      width: 14px; /* Exactamente la mitad de 28px */
+      height: 28px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath fill='%23d1d5db' d='M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z'/%3E%3C/svg%3E");
+      background-size: 28px 28px;
+      background-repeat: no-repeat;
+      display: inline-block;
+      margin: 0;
+      padding: 0;
     }
-    .star-rating input:checked ~ label,
-    .star-rating label:hover,
-    .star-rating label:hover ~ label {
-      color: #eab308; /* yellow-500 */
+
+    /* Labels "half" (mitad izquierda) - el background arranca desde la izquierda */
+    .rating-group label.half {
+      background-position: left center;
+    }
+
+    /* Labels "full" (mitad derecha) - el background arranca desplazado hacia la izquierda, mostrando solo la mitad derecha de la estrella */
+    .rating-group label.full {
+      background-position: -14px center;
+    }
+
+    /* Estrella amarilla (llena) cuando checked o hover */
+    .rating-group input:checked ~ label,
+    .rating-group label:hover,
+    .rating-group label:hover ~ label {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath fill='%23eab308' d='M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z'/%3E%3C/svg%3E");
+    }
+
+    /* Fix visual para el hover del grupo */
+    .rating-group:hover label {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath fill='%23d1d5db' d='M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z'/%3E%3C/svg%3E");
+    }
+    .rating-group label:hover,
+    .rating-group label:hover ~ label {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath fill='%23eab308' d='M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z'/%3E%3C/svg%3E") !important;
     }
   </style>
 </head>
@@ -71,48 +102,72 @@
           </select>
         </div>
 
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm font-medium">Puntuación General</label>
-            <div class="star-rating mt-1" id="rating-general">
-              <input type="radio" id="gen-5" name="general" value="5" required><label for="gen-5">★</label>
-              <input type="radio" id="gen-4" name="general" value="4"><label for="gen-4">★</label>
-              <input type="radio" id="gen-3" name="general" value="3"><label for="gen-3">★</label>
-              <input type="radio" id="gen-2" name="general" value="2"><label for="gen-2">★</label>
-              <input type="radio" id="gen-1" name="general" value="1"><label for="gen-1">★</label>
-            </div>
-          </div>
-
-          <div>
+        <div class="space-y-4">
+          <!-- CALIDAD DE COMIDA -->
+          <div class="flex items-center justify-between">
             <label class="block text-sm font-medium">Calidad de la Comida</label>
-            <div class="star-rating mt-1" id="rating-comida">
-              <input type="radio" id="comida-5" name="comida" value="5" required><label for="comida-5">★</label>
-              <input type="radio" id="comida-4" name="comida" value="4"><label for="comida-4">★</label>
-              <input type="radio" id="comida-3" name="comida" value="3"><label for="comida-3">★</label>
-              <input type="radio" id="comida-2" name="comida" value="2"><label for="comida-2">★</label>
-              <input type="radio" id="comida-1" name="comida" value="1"><label for="comida-1">★</label>
+            <div class="rating-group" id="rating-comida">
+              <input type="radio" id="comida-5" name="comida" value="5" required><label for="comida-5" class="full" title="5 estrellas"></label>
+              <input type="radio" id="comida-4.5" name="comida" value="4.5"><label for="comida-4.5" class="half" title="4.5 estrellas"></label>
+              <input type="radio" id="comida-4" name="comida" value="4"><label for="comida-4" class="full" title="4 estrellas"></label>
+              <input type="radio" id="comida-3.5" name="comida" value="3.5"><label for="comida-3.5" class="half" title="3.5 estrellas"></label>
+              <input type="radio" id="comida-3" name="comida" value="3"><label for="comida-3" class="full" title="3 estrellas"></label>
+              <input type="radio" id="comida-2.5" name="comida" value="2.5"><label for="comida-2.5" class="half" title="2.5 estrellas"></label>
+              <input type="radio" id="comida-2" name="comida" value="2"><label for="comida-2" class="full" title="2 estrellas"></label>
+              <input type="radio" id="comida-1.5" name="comida" value="1.5"><label for="comida-1.5" class="half" title="1.5 estrellas"></label>
+              <input type="radio" id="comida-1" name="comida" value="1"><label for="comida-1" class="full" title="1 estrella"></label>
+              <input type="radio" id="comida-0.5" name="comida" value="0.5"><label for="comida-0.5" class="half" title="0.5 estrellas"></label>
             </div>
           </div>
 
-          <div>
+          <!-- ATENCIÓN -->
+          <div class="flex items-center justify-between">
             <label class="block text-sm font-medium">Atención</label>
-            <div class="star-rating mt-1" id="rating-atencion">
-              <input type="radio" id="aten-5" name="atencion" value="5" required><label for="aten-5">★</label>
-              <input type="radio" id="aten-4" name="atencion" value="4"><label for="aten-4">★</label>
-              <input type="radio" id="aten-3" name="atencion" value="3"><label for="aten-3">★</label>
-              <input type="radio" id="aten-2" name="atencion" value="2"><label for="aten-2">★</label>
-              <input type="radio" id="aten-1" name="atencion" value="1"><label for="aten-1">★</label>
+            <div class="rating-group" id="rating-atencion">
+              <input type="radio" id="aten-5" name="atencion" value="5" required><label for="aten-5" class="full" title="5 estrellas"></label>
+              <input type="radio" id="aten-4.5" name="atencion" value="4.5"><label for="aten-4.5" class="half" title="4.5 estrellas"></label>
+              <input type="radio" id="aten-4" name="atencion" value="4"><label for="aten-4" class="full" title="4 estrellas"></label>
+              <input type="radio" id="aten-3.5" name="atencion" value="3.5"><label for="aten-3.5" class="half" title="3.5 estrellas"></label>
+              <input type="radio" id="aten-3" name="atencion" value="3"><label for="aten-3" class="full" title="3 estrellas"></label>
+              <input type="radio" id="aten-2.5" name="atencion" value="2.5"><label for="aten-2.5" class="half" title="2.5 estrellas"></label>
+              <input type="radio" id="aten-2" name="atencion" value="2"><label for="aten-2" class="full" title="2 estrellas"></label>
+              <input type="radio" id="aten-1.5" name="atencion" value="1.5"><label for="aten-1.5" class="half" title="1.5 estrellas"></label>
+              <input type="radio" id="aten-1" name="atencion" value="1"><label for="aten-1" class="full" title="1 estrella"></label>
+              <input type="radio" id="aten-0.5" name="atencion" value="0.5"><label for="aten-0.5" class="half" title="0.5 estrellas"></label>
             </div>
           </div>
 
-          <div>
+          <!-- PRECIO -->
+          <div class="flex items-center justify-between">
             <label class="block text-sm font-medium">Precio</label>
-            <div class="star-rating mt-1" id="rating-precio">
-              <input type="radio" id="prec-5" name="precio" value="5" required><label for="prec-5">★</label>
-              <input type="radio" id="prec-4" name="precio" value="4"><label for="prec-4">★</label>
-              <input type="radio" id="prec-3" name="precio" value="3"><label for="prec-3">★</label>
-              <input type="radio" id="prec-2" name="precio" value="2"><label for="prec-2">★</label>
-              <input type="radio" id="prec-1" name="precio" value="1"><label for="prec-1">★</label>
+            <div class="rating-group" id="rating-precio">
+              <input type="radio" id="prec-5" name="precio" value="5" required><label for="prec-5" class="full" title="5 estrellas"></label>
+              <input type="radio" id="prec-4.5" name="precio" value="4.5"><label for="prec-4.5" class="half" title="4.5 estrellas"></label>
+              <input type="radio" id="prec-4" name="precio" value="4"><label for="prec-4" class="full" title="4 estrellas"></label>
+              <input type="radio" id="prec-3.5" name="precio" value="3.5"><label for="prec-3.5" class="half" title="3.5 estrellas"></label>
+              <input type="radio" id="prec-3" name="precio" value="3"><label for="prec-3" class="full" title="3 estrellas"></label>
+              <input type="radio" id="prec-2.5" name="precio" value="2.5"><label for="prec-2.5" class="half" title="2.5 estrellas"></label>
+              <input type="radio" id="prec-2" name="precio" value="2"><label for="prec-2" class="full" title="2 estrellas"></label>
+              <input type="radio" id="prec-1.5" name="precio" value="1.5"><label for="prec-1.5" class="half" title="1.5 estrellas"></label>
+              <input type="radio" id="prec-1" name="precio" value="1"><label for="prec-1" class="full" title="1 estrella"></label>
+              <input type="radio" id="prec-0.5" name="precio" value="0.5"><label for="prec-0.5" class="half" title="0.5 estrellas"></label>
+            </div>
+          </div>
+
+          <!-- AMBIENTE -->
+          <div class="flex items-center justify-between">
+            <label class="block text-sm font-medium">Ambiente</label>
+            <div class="rating-group" id="rating-ambiente">
+              <input type="radio" id="amb-5" name="ambiente" value="5" required><label for="amb-5" class="full" title="5 estrellas"></label>
+              <input type="radio" id="amb-4.5" name="ambiente" value="4.5"><label for="amb-4.5" class="half" title="4.5 estrellas"></label>
+              <input type="radio" id="amb-4" name="ambiente" value="4"><label for="amb-4" class="full" title="4 estrellas"></label>
+              <input type="radio" id="amb-3.5" name="ambiente" value="3.5"><label for="amb-3.5" class="half" title="3.5 estrellas"></label>
+              <input type="radio" id="amb-3" name="ambiente" value="3"><label for="amb-3" class="full" title="3 estrellas"></label>
+              <input type="radio" id="amb-2.5" name="ambiente" value="2.5"><label for="amb-2.5" class="half" title="2.5 estrellas"></label>
+              <input type="radio" id="amb-2" name="ambiente" value="2"><label for="amb-2" class="full" title="2 estrellas"></label>
+              <input type="radio" id="amb-1.5" name="ambiente" value="1.5"><label for="amb-1.5" class="half" title="1.5 estrellas"></label>
+              <input type="radio" id="amb-1" name="ambiente" value="1"><label for="amb-1" class="full" title="1 estrella"></label>
+              <input type="radio" id="amb-0.5" name="ambiente" value="0.5"><label for="amb-0.5" class="half" title="0.5 estrellas"></label>
             </div>
           </div>
         </div>
@@ -138,7 +193,7 @@
         </li>
         <li class="flex items-start">
           <span class="text-2xl mr-3">2️⃣</span>
-          <p><strong>Califica en detalle:</strong> Evalúa la comida, la atención y el precio por separado para dar una opinión completa.</p>
+          <p><strong>Califica en detalle:</strong> Evalúa la comida, la atención, el precio y el ambiente por separado para dar una opinión completa. ¡Ahora puedes dar medias estrellas!</p>
         </li>
         <li class="flex items-start">
           <span class="text-2xl mr-3">3️⃣</span>

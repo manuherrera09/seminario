@@ -9,6 +9,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let restaurantesCacheados = [];
+let perfilesCacheados = [];
 
 // =========================================================================
 // 2. LÓGICA DEL CARRUSEL DE FONDO Y AUTENTICACIÓN
@@ -61,8 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // ---- Cargar lista de restaurantes para la búsqueda ----
-  cargarRestaurantesParaBusqueda();
+  // ---- Cargar lista de restaurantes y usuarios para la búsqueda ----
+  cargarDatosParaBusqueda();
 
   // ---- Cargar reseñas recientes si estamos en el index ----
   if (document.getElementById('recent-reviews-container')) {
@@ -71,21 +72,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =========================================================================
-// 3. LÓGICA DE BARRA DE BÚSQUEDA
+// 3. LÓGICA DE BARRA DE BÚSQUEDA MIXTA (RESTAURANTES + USUARIOS)
 // =========================================================================
-async function cargarRestaurantesParaBusqueda() {
+async function cargarDatosParaBusqueda() {
   try {
-    const { data, error } = await supabaseClient
+    // Cargar Restaurantes
+    const { data: restaurantes, error: errorRest } = await supabaseClient
       .from('restaurantes')
       .select('id, nombre');
 
-    if (error) throw error;
+    if (!errorRest && restaurantes) {
+      restaurantesCacheados = restaurantes.map(r => ({ ...r, tipo: 'restaurante' }));
+    }
 
-    if (data) {
-      restaurantesCacheados = data;
+    // Cargar Perfiles (Usuarios)
+    const { data: perfiles, error: errorPerf } = await supabaseClient
+      .from('perfiles')
+      .select('id, nombre_usuario, imagen_url');
+
+    if (!errorPerf && perfiles) {
+      perfilesCacheados = perfiles
+          .filter(p => p.nombre_usuario) // Solo usuarios que hayan configurado un nombre
+          .map(p => ({
+              id: p.id,
+              nombre: p.nombre_usuario,
+              imagen_url: p.imagen_url,
+              tipo: 'usuario'
+          }));
     }
   } catch (err) {
-    console.error("Error al cargar restaurantes para búsqueda:", err);
+    console.error("Error al cargar datos para búsqueda:", err);
   }
 }
 
@@ -94,6 +110,9 @@ const suggestionsContainer = document.getElementById('search-suggestions');
 const suggestionsList = document.getElementById('suggestions-list');
 
 if (searchInput) {
+  // Actualizamos el placeholder para que el usuario sepa que puede buscar ambas cosas
+  searchInput.placeholder = "Busca un restaurante o un usuario...";
+
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
 
@@ -103,9 +122,10 @@ if (searchInput) {
       return;
     }
 
-    // Filtramos la lista de restaurantes en memoria
-    const coincidencias = restaurantesCacheados.filter(rest =>
-      rest.nombre.toLowerCase().includes(query)
+    // Combinar ambas listas y filtrar
+    const todosLosDatos = [...restaurantesCacheados, ...perfilesCacheados];
+    const coincidencias = todosLosDatos.filter(item =>
+      item.nombre.toLowerCase().includes(query)
     );
 
     mostrarSugerencias(coincidencias, query);
@@ -129,29 +149,51 @@ function mostrarSugerencias(resultados, query) {
   if (resultados.length === 0) {
     const li = document.createElement('li');
     li.className = 'px-4 py-3 text-gray-500 text-sm text-center';
-    li.textContent = 'No se encontraron restaurantes';
+    li.textContent = 'No se encontraron resultados';
     suggestionsList.appendChild(li);
   } else {
-    // Mostrar hasta 7 resultados para no saturar
-    const topResultados = resultados.slice(0, 7);
+    // Mostrar hasta 8 resultados para no saturar
+    const topResultados = resultados.slice(0, 8);
 
-    topResultados.forEach(rest => {
+    topResultados.forEach(item => {
       const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center';
+      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center justify-between';
 
       // Resaltar la coincidencia
       const regex = new RegExp(`(${query})`, "gi");
-      const nombreResaltado = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+      const nombreResaltado = item.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
 
-      li.innerHTML = `<i class="fas fa-utensils text-gray-400 mr-3"></i> ${nombreResaltado}`;
+      // Construir el lado izquierdo (icono/foto + nombre)
+      let leftContent = '';
+      if (item.tipo === 'restaurante') {
+          leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+      } else {
+          // Si es usuario, mostrar icono de usuario o su foto en miniatura
+          if (item.imagen_url) {
+              leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-gray-200"> ${nombreResaltado}</div>`;
+          } else {
+              leftContent = `<div class="flex items-center"><i class="fas fa-user text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+          }
+      }
 
-      // Acción al hacer clic en un restaurante
+      // Etiqueta indicadora a la derecha
+      const rightBadge = item.tipo === 'restaurante'
+          ? `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase tracking-wider">Lugar</span>`
+          : `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded uppercase tracking-wider">Usuario</span>`;
+
+      li.innerHTML = `${leftContent} ${rightBadge}`;
+
+      // Acción al hacer clic
       li.addEventListener('click', () => {
-        searchInput.value = rest.nombre;
+        searchInput.value = item.nombre;
         suggestionsContainer.classList.add('hidden');
 
-        // Redirigir a la página de detalles del restaurante, pasando el ID en la URL
-        window.location.href = `restaurante.html?id=${rest.id}`;
+        // Redirigir según el tipo
+        if (item.tipo === 'restaurante') {
+            window.location.href = `restaurante.html?id=${item.id}`;
+        } else {
+            window.location.href = `perfil.html?id=${item.id}`;
+        }
       });
 
       suggestionsList.appendChild(li);
@@ -192,14 +234,19 @@ async function cargarResenasRecientes() {
       const restauranteNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante Desconocido';
       const usuarioNombre = resena.perfiles && resena.perfiles.nombre_usuario ? resena.perfiles.nombre_usuario : 'Usuario Anónimo';
 
-      const ratingTotal = resena.puntuacion_general ? Number(resena.puntuacion_general).toFixed(1) : 'N/A';
+      // Validación más segura de los ratings para evitar posibles problemas con toFixed()
+      let ratingTotal = 'N/A';
+      if (resena.puntuacion_general !== null && resena.puntuacion_general !== undefined) {
+         ratingTotal = Number(resena.puntuacion_general).toFixed(1);
+      }
 
-      const comidaRating = resena.calidad_comida ? resena.calidad_comida + ' ★' : 'N/A';
-      const atencionRating = resena.atencion ? resena.atencion + ' ★' : 'N/A';
-      const precioRating = resena.precio ? resena.precio + ' ★' : 'N/A';
+      const comidaRating = (resena.calidad_comida !== null && resena.calidad_comida !== undefined) ? resena.calidad_comida + ' ★' : 'N/A';
+      const atencionRating = (resena.atencion !== null && resena.atencion !== undefined) ? resena.atencion + ' ★' : 'N/A';
+      const precioRating = (resena.precio !== null && resena.precio !== undefined) ? resena.precio + ' ★' : 'N/A';
+      const ambienteRating = (resena.ambiente !== null && resena.ambiente !== undefined) ? resena.ambiente + ' ★' : 'N/A';
 
       const resenaHTML = `
-        <div class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition flex flex-col h-full" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+        <div class="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition flex flex-col h-full" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante || resena.restaurante_id}'">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h3 class="font-bold text-lg text-gray-800">${restauranteNombre}</h3>
@@ -212,6 +259,7 @@ async function cargarResenasRecientes() {
              <span>Comida: ${comidaRating}</span>
              <span>Atención: ${atencionRating}</span>
              <span>Precio: ${precioRating}</span>
+             <span>Ambiente: ${ambienteRating}</span>
           </div>
         </div>
       `;

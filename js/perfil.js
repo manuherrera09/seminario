@@ -15,6 +15,10 @@ let restaurantesList = [];
 let currentFavoritos = [];
 let isOwnProfile = true;
 
+// Variables para búsqueda mixta
+let navRestaurantesCacheados = [];
+let navPerfilesCacheados = [];
+
 // =========================================================================
 // 2. LÓGICA DE PERFIL Y AUTENTICACIÓN
 // =========================================================================
@@ -132,7 +136,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Si NO es nuestro perfil y estamos logueados, mostramos el botón seguir
       const followBtn = document.getElementById('follow-btn');
       if(followBtn) followBtn.classList.remove('hidden');
-      // La configuración del botón seguir se llama DESPUÉS de cargar seguidores
   }
 
   // Cargar seguidores y seguidos (esto actualizará el DOM de contadores e isFollowingUser)
@@ -146,7 +149,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   configurarModalesFollows();
   cargarHistorialResenas();
   renderizarFavoritos();
-  configurarBarraDeBusqueda();
+
+  // Cargar datos mixtos para la barra de navegación y configurarla
+  await cargarDatosParaBusquedaNav();
+  configurarBarraDeBusquedaMixtaNav();
 });
 
 // =========================================================================
@@ -500,14 +506,44 @@ function configurarEdicionFavoritos() {
 }
 
 // =========================================================================
-// 6. LÓGICA DE BARRA DE BÚSQUEDA
+// 6. LÓGICA DE BARRA DE BÚSQUEDA (MIXTA)
 // =========================================================================
-function configurarBarraDeBusqueda() {
+
+async function cargarDatosParaBusquedaNav() {
+  try {
+    // Restaurantes (ya estaban cargados, pero por si acaso remapeamos)
+    if (restaurantesList.length > 0) {
+        navRestaurantesCacheados = restaurantesList.map(r => ({ ...r, tipo: 'restaurante' }));
+    }
+
+    // Usuarios
+    const { data: perfiles, error: errorPerf } = await supabaseClient
+      .from('perfiles')
+      .select('id, nombre_usuario, imagen_url');
+
+    if (!errorPerf && perfiles) {
+      navPerfilesCacheados = perfiles
+          .filter(p => p.nombre_usuario)
+          .map(p => ({
+              id: p.id,
+              nombre: p.nombre_usuario,
+              imagen_url: p.imagen_url,
+              tipo: 'usuario'
+          }));
+    }
+  } catch (err) {
+    console.error("Error al cargar datos mixtos para búsqueda nav:", err);
+  }
+}
+
+function configurarBarraDeBusquedaMixtaNav() {
   const searchInput = document.getElementById('nav-search-input');
   const suggestionsContainer = document.getElementById('nav-search-suggestions');
   const suggestionsList = document.getElementById('nav-suggestions-list');
 
   if (!searchInput) return;
+
+  searchInput.placeholder = "Busca un restaurante o un usuario...";
 
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
@@ -517,11 +553,12 @@ function configurarBarraDeBusqueda() {
       return;
     }
 
-    const coincidencias = restaurantesList.filter(rest =>
-      rest.nombre.toLowerCase().includes(query)
+    const todosLosDatos = [...navRestaurantesCacheados, ...navPerfilesCacheados];
+    const coincidencias = todosLosDatos.filter(item =>
+      item.nombre.toLowerCase().includes(query)
     );
 
-    mostrarSugerenciasBusqueda(coincidencias, query, suggestionsList, suggestionsContainer, searchInput);
+    mostrarSugerenciasBusquedaMixta(coincidencias, query, suggestionsList, suggestionsContainer, searchInput);
   });
 
   document.addEventListener('click', (e) => {
@@ -531,31 +568,50 @@ function configurarBarraDeBusqueda() {
   });
 }
 
-function mostrarSugerenciasBusqueda(resultados, query, listElement, containerElement, inputElement) {
+function mostrarSugerenciasBusquedaMixta(resultados, query, listElement, containerElement, inputElement) {
   listElement.innerHTML = '';
 
   if (resultados.length === 0) {
     const li = document.createElement('li');
     li.className = 'px-4 py-3 text-gray-500 text-sm text-center';
-    li.textContent = 'No se encontraron restaurantes';
+    li.textContent = 'No se encontraron resultados';
     listElement.appendChild(li);
   } else {
-    const topResultados = resultados.slice(0, 5);
+    const topResultados = resultados.slice(0, 6);
 
-    topResultados.forEach(rest => {
+    topResultados.forEach(item => {
       const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center text-sm';
+      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center justify-between text-sm';
 
       const regex = new RegExp(`(${query})`, "gi");
-      const nombreResaltado = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+      const nombreResaltado = item.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
 
-      li.innerHTML = `<i class="fas fa-utensils text-gray-400 mr-3"></i> ${nombreResaltado}`;
+      let leftContent = '';
+      if (item.tipo === 'restaurante') {
+          leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+      } else {
+          if (item.imagen_url) {
+              leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-gray-200"> ${nombreResaltado}</div>`;
+          } else {
+              leftContent = `<div class="flex items-center"><i class="fas fa-user text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+          }
+      }
+
+      const rightBadge = item.tipo === 'restaurante'
+          ? `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase tracking-wider">Lugar</span>`
+          : `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded uppercase tracking-wider">Usuario</span>`;
+
+      li.innerHTML = `${leftContent} ${rightBadge}`;
 
       li.addEventListener('click', () => {
-        inputElement.value = rest.nombre;
+        inputElement.value = item.nombre;
         containerElement.classList.add('hidden');
-        // Redirigir a la página de detalles del restaurante, pasando el ID en la URL
-        window.location.href = `restaurante.html?id=${rest.id}`;
+
+        if (item.tipo === 'restaurante') {
+            window.location.href = `restaurante.html?id=${item.id}`;
+        } else {
+            window.location.href = `perfil.html?id=${item.id}`;
+        }
       });
 
       listElement.appendChild(li);
@@ -583,8 +639,9 @@ async function cargarSeguidores() {
 
         if (errFollowers) throw errFollowers;
 
-        // Comprobar si YO sigo a este usuario
+        // Comprobar si YO sigo a este usuario (por si ya está en la BD)
         if (currentSessionUserId && !isOwnProfile) {
+            // Buscamos si currentSessionUserId (mi ID) está entre los follower_id
             isFollowingUser = followers.some(f => f.follower_id === currentSessionUserId);
         }
 

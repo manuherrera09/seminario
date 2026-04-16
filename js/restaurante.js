@@ -191,6 +191,7 @@ async function cargarDetallesRestaurante() {
                 calidad_comida,
                 atencion,
                 precio,
+                ambiente,
                 id_usuario,
                 perfiles (nombre_usuario)
             `)
@@ -227,18 +228,30 @@ function calcularYMostrarPromedios() {
     let sumComida = 0;
     let sumAtencion = 0;
     let sumPrecio = 0;
+    let sumAmbiente = 0;
+
+    let ambienteCount = 0; // Para no promediar los que no tienen ambiente (los viejos)
 
     allReviews.forEach(r => {
         sumGeneral += r.puntuacion_general;
         sumComida += r.calidad_comida;
         sumAtencion += r.atencion;
         sumPrecio += r.precio;
+        if (r.ambiente) {
+            sumAmbiente += r.ambiente;
+            ambienteCount++;
+        }
     });
 
     const avgGeneral = (sumGeneral / totalCount).toFixed(1);
     const avgComida = (sumComida / totalCount).toFixed(1);
     const avgAtencion = (sumAtencion / totalCount).toFixed(1);
     const avgPrecio = (sumPrecio / totalCount).toFixed(1);
+
+    let avgAmbiente = 0;
+    if (ambienteCount > 0) {
+        avgAmbiente = (sumAmbiente / ambienteCount).toFixed(1);
+    }
 
     document.getElementById('restaurante-rating').textContent = avgGeneral;
 
@@ -250,6 +263,28 @@ function calcularYMostrarPromedios() {
 
     document.getElementById('rating-precio').textContent = `${avgPrecio} ★`;
     document.getElementById('bar-precio').style.width = `${(avgPrecio / 5) * 100}%`;
+
+    // Buscar si ya existe el bar de ambiente en el DOM, si no, lo agregamos dinámicamente
+    let barAmbiente = document.getElementById('bar-ambiente');
+    if (!barAmbiente && ambienteCount > 0) {
+        const divInfo = document.querySelector('.bg-white.p-6.rounded-lg.shadow-md .space-y-4');
+        if (divInfo) {
+            divInfo.innerHTML += `
+                <div>
+                   <div class="flex justify-between text-sm mb-1">
+                       <span class="font-medium text-gray-700">Ambiente</span>
+                       <span class="font-bold" id="rating-ambiente">${avgAmbiente} ★</span>
+                   </div>
+                   <div class="w-full bg-gray-200 rounded-full h-2">
+                       <div class="bg-yellow-400 h-2 rounded-full" id="bar-ambiente" style="width: ${(avgAmbiente / 5) * 100}%"></div>
+                   </div>
+               </div>
+            `;
+        }
+    } else if (barAmbiente && ambienteCount > 0) {
+        document.getElementById('rating-ambiente').textContent = `${avgAmbiente} ★`;
+        barAmbiente.style.width = `${(avgAmbiente / 5) * 100}%`;
+    }
 }
 
 function renderizarResenas(sortMode) {
@@ -289,12 +324,28 @@ function renderizarResenas(sortMode) {
 
         // Generar HTML de las estrellitas generales
         let starsHtml = '';
+
+        // Determinar cuántas estrellas llenas, medias o vacías dibujar
+        const rating = resena.puntuacion_general || 0;
+        const fullStars = Math.floor(rating);
+        const hasHalfStar = (rating - fullStars) >= 0.5;
+
         for(let i=1; i<=5; i++) {
-            if(i <= resena.puntuacion_general) {
+            if(i <= fullStars) {
+                // Estrella llena
                 starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
+            } else if(i === fullStars + 1 && hasHalfStar) {
+                // Media estrella
+                starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
             } else {
-                starsHtml += '<i class="fas fa-star text-gray-300"></i>';
+                // Estrella vacía
+                starsHtml += '<i class="far fa-star text-yellow-400"></i>';
             }
+        }
+
+        let extraRatingsHTML = '';
+        if (resena.ambiente) {
+            extraRatingsHTML = `<span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-music text-gray-400"></i> ${resena.ambiente}/5</span>`;
         }
 
         const divResena = document.createElement('div');
@@ -318,10 +369,11 @@ function renderizarResenas(sortMode) {
 
             <p class="text-gray-700 text-sm mb-3 bg-white p-2 rounded">${resena.comentario}</p>
 
-            <div class="flex gap-4 text-xs text-gray-500">
+            <div class="flex gap-4 text-xs text-gray-500 flex-wrap">
                 <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-utensils text-gray-400"></i> ${resena.calidad_comida}/5</span>
                 <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-concierge-bell text-gray-400"></i> ${resena.atencion}/5</span>
                 <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-gray-400"></i> ${resena.precio}/5</span>
+                ${extraRatingsHTML}
             </div>
         `;
 

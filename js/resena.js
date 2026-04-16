@@ -112,11 +112,17 @@ form.addEventListener('submit', async (e) => {
   const restauranteId = document.getElementById('restaurante').value;
   const comentario = document.getElementById('comentario').value;
 
-  // Obtener valores de las estrellas
-  const general = document.querySelector('input[name="general"]:checked')?.value;
-  const comida = document.querySelector('input[name="comida"]:checked')?.value;
-  const atencion = document.querySelector('input[name="atencion"]:checked')?.value;
-  const precio = document.querySelector('input[name="precio"]:checked')?.value;
+  // Obtener valores de las estrellas (ahora como floats)
+  const comida = parseFloat(document.querySelector('input[name="comida"]:checked')?.value || 0);
+  const atencion = parseFloat(document.querySelector('input[name="atencion"]:checked')?.value || 0);
+  const precio = parseFloat(document.querySelector('input[name="precio"]:checked')?.value || 0);
+  const ambiente = parseFloat(document.querySelector('input[name="ambiente"]:checked')?.value || 0);
+
+  // Calcular el promedio general con decimales
+  let general = 0;
+  if (comida > 0 && atencion > 0 && precio > 0 && ambiente > 0) {
+      general = (comida + atencion + precio + ambiente) / 4;
+  }
 
   try {
     // Insertamos la nueva reseña en la tabla 'resenas'
@@ -125,10 +131,11 @@ form.addEventListener('submit', async (e) => {
       .insert([{
         id_restaurante: restauranteId,
         id_usuario: currentUserId,     // AHORA SÍ ENVIAMOS EL ID DEL USUARIO LOGUEADO
-        puntuacion_general: general,
+        puntuacion_general: general,   // Ahora se guarda con decimales (ej: 4.25)
         calidad_comida: comida,
         atencion: atencion,
         precio: precio,
+        ambiente: ambiente, // Agregado el campo ambiente a la base de datos
         comentario: comentario
       }]);
 
