@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Si NO es nuestro perfil y estamos logueados, mostramos el botón seguir
       const followBtn = document.getElementById('follow-btn');
       if(followBtn) followBtn.classList.remove('hidden');
+      // La configuración del botón seguir se llama DESPUÉS de cargar seguidores
   }
 
   // Cargar seguidores y seguidos (esto actualizará el DOM de contadores e isFollowingUser)
@@ -294,6 +295,7 @@ async function cargarHistorialResenas() {
                   calidad_comida,
                   atencion,
                   precio,
+                  ambiente,
                   id_restaurante
               `)
       .eq('id_usuario', profileUserId)
@@ -341,6 +343,10 @@ async function cargarHistorialResenas() {
             window.location.href = `restaurante.html?id=${resena.id_restaurante}`;
         };
 
+        const ratingGeneral = (resena.puntuacion_general !== null && resena.puntuacion_general !== undefined)
+                                ? Number(resena.puntuacion_general).toFixed(1)
+                                : 'N/A';
+
         divResena.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                       <div>
@@ -350,13 +356,14 @@ async function cargarHistorialResenas() {
                     </div>
 
                     <div class="mb-3 flex items-center gap-2">
-                      <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${resena.puntuacion_general}.0 ★</span>
+                      <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${ratingGeneral} ★</span>
                     </div>
 
                     <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded">
                        <span><strong>Comida:</strong> ${resena.calidad_comida} ★</span>
                        <span><strong>Atención:</strong> ${resena.atencion} ★</span>
                        <span><strong>Precio:</strong> ${resena.precio} ★</span>
+                       ${resena.ambiente ? `<span><strong>Ambiente:</strong> ${resena.ambiente} ★</span>` : ''}
                     </div>
 
                     <p class="text-gray-700 text-sm">${resena.comentario}</p>

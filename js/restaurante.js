@@ -328,18 +328,21 @@ function renderizarResenas(sortMode) {
         // Determinar cuántas estrellas llenas, medias o vacías dibujar
         const rating = resena.puntuacion_general || 0;
         const fullStars = Math.floor(rating);
-        const hasHalfStar = (rating - fullStars) >= 0.5;
+        const hasHalfStar = (rating - fullStars) >= 0.25 && (rating - fullStars) < 0.75;
+        const extraFullStar = (rating - fullStars) >= 0.75 ? 1 : 0;
+
+        const totalFullStars = fullStars + extraFullStar;
 
         for(let i=1; i<=5; i++) {
-            if(i <= fullStars) {
+            if(i <= totalFullStars) {
                 // Estrella llena
                 starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
-            } else if(i === fullStars + 1 && hasHalfStar) {
+            } else if(i === totalFullStars + 1 && hasHalfStar) {
                 // Media estrella
                 starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
             } else {
                 // Estrella vacía
-                starsHtml += '<i class="far fa-star text-yellow-400"></i>';
+                starsHtml += '<i class="far fa-star text-gray-300"></i>';
             }
         }
 
