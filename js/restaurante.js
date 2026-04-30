@@ -9,6 +9,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentRestauranteId = null;
 let allReviews = [];
+let currentUserId = null; // Guardar ID de sesión para los votos
 
 // =========================================================================
 // 2. INICIALIZACIÓN DE LA PÁGINA
@@ -200,7 +201,30 @@ async function cargarDetallesRestaurante() {
 
         if (resenasError) throw resenasError;
 
-        allReviews = resenas || [];
+        // 2.1 Cargar VOTOS de las reseñas
+        let votosData = [];
+        if (resenas && resenas.length > 0) {
+            const resenasIds = resenas.map(r => r.id);
+            const { data: votos, error: errVotos } = await supabaseClient
+                .from('resenas_votos')
+                .select('resena_id, usuario_id, tipo')
+                .in('resena_id', resenasIds);
+
+            if (!errVotos && votos) {
+                votosData = votos;
+            }
+        }
+
+        // Inyectar los votos dentro de cada reseña en allReviews
+        allReviews = (resenas || []).map(resena => {
+            const misVotos = votosData.filter(v => v.resena_id === resena.id);
+            return {
+                ...resena,
+                likes: misVotos.filter(v => v.tipo === 'like').length,
+                dislikes: misVotos.filter(v => v.tipo === 'dislike').length,
+                userVoto: currentUserId ? misVotos.find(v => v.usuario_id === currentUserId)?.tipo : null
+            };
+        });
 
         // 3. Calcular y mostrar promedios
         calcularYMostrarPromedios();
@@ -351,6 +375,10 @@ function renderizarResenas(sortMode) {
             extraRatingsHTML = `<span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-music text-gray-400"></i> ${resena.ambiente}/5</span>`;
         }
 
+        // Lógica de botones de like/dislike visuales
+        const likeClass = resena.userVoto === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50';
+        const dislikeClass = resena.userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
+
         const divResena = document.createElement('div');
         divResena.className = "border-b border-gray-100 last:border-b-0 pb-6 last:pb-0";
 
@@ -372,16 +400,29 @@ function renderizarResenas(sortMode) {
 
             <p class="text-gray-700 text-sm mb-3 bg-white p-2 rounded">${resena.comentario}</p>
 
-            <div class="flex gap-4 text-xs text-gray-500 flex-wrap">
-                <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-utensils text-gray-400"></i> ${resena.calidad_comida}/5</span>
-                <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-concierge-bell text-gray-400"></i> ${resena.atencion}/5</span>
-                <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-gray-400"></i> ${resena.precio}/5</span>
-                ${extraRatingsHTML}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex gap-4 text-xs text-gray-500 flex-wrap">
+                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-utensils text-gray-400"></i> ${resena.calidad_comida}/5</span>
+                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-concierge-bell text-gray-400"></i> ${resena.atencion}/5</span>
+                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-gray-400"></i> ${resena.precio}/5</span>
+                    ${extraRatingsHTML}
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}">
+                        <i class="fas fa-thumbs-up"></i> <span class="like-count">${resena.likes}</span>
+                    </button>
+                    <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
+                        <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${resena.dislikes}</span>
+                    </button>
+                </div>
             </div>
         `;
 
         container.appendChild(divResena);
     });
+
+    configurarVotos();
 }
 
 function mostrarError(msg = null) {
@@ -394,6 +435,105 @@ function mostrarError(msg = null) {
     }
 }
 
+// Lógica de interacción para los botones de Like/Dislike
+function configurarVotos() {
+    const btnLikes = document.querySelectorAll('.btn-like');
+    const btnDislikes = document.querySelectorAll('.btn-dislike');
+
+    const procesarVoto = async (resenaId, tipoVotoDeseado, botonClickado) => {
+        if (!currentUserId) {
+            alert("Debes iniciar sesión para votar.");
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const contenedorResena = botonClickado.closest('.flex.items-center.gap-2');
+        const btnLike = contenedorResena.querySelector('.btn-like');
+        const btnDislike = contenedorResena.querySelector('.btn-dislike');
+
+        const spanLikeCount = btnLike.querySelector('.like-count');
+        const spanDislikeCount = btnDislike.querySelector('.dislike-count');
+
+        let isCurrentlyLiked = btnLike.classList.contains('text-green-600');
+        let isCurrentlyDisliked = btnDislike.classList.contains('text-red-600');
+
+        let currentLikeCount = parseInt(spanLikeCount.textContent);
+        let currentDislikeCount = parseInt(spanDislikeCount.textContent);
+
+        // Deshabilitar botones temporalmente
+        btnLike.disabled = true;
+        btnDislike.disabled = true;
+
+        try {
+            if (tipoVotoDeseado === 'like') {
+                if (isCurrentlyLiked) {
+                    // Quitar like
+                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
+
+                    btnLike.classList.remove('text-green-600', 'bg-green-50');
+                    btnLike.classList.add('text-gray-400');
+                    spanLikeCount.textContent = currentLikeCount - 1;
+                } else {
+                    // Poner like (Upsert para sobreescribir dislike si existe)
+                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'like' });
+
+                    btnLike.classList.remove('text-gray-400');
+                    btnLike.classList.add('text-green-600', 'bg-green-50');
+                    spanLikeCount.textContent = currentLikeCount + 1;
+
+                    if (isCurrentlyDisliked) {
+                        btnDislike.classList.remove('text-red-600', 'bg-red-50');
+                        btnDislike.classList.add('text-gray-400');
+                        spanDislikeCount.textContent = currentDislikeCount - 1;
+                    }
+                }
+            } else if (tipoVotoDeseado === 'dislike') {
+                if (isCurrentlyDisliked) {
+                    // Quitar dislike
+                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
+
+                    btnDislike.classList.remove('text-red-600', 'bg-red-50');
+                    btnDislike.classList.add('text-gray-400');
+                    spanDislikeCount.textContent = currentDislikeCount - 1;
+                } else {
+                    // Poner dislike
+                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
+
+                    btnDislike.classList.remove('text-gray-400');
+                    btnDislike.classList.add('text-red-600', 'bg-red-50');
+                    spanDislikeCount.textContent = currentDislikeCount + 1;
+
+                    if (isCurrentlyLiked) {
+                        btnLike.classList.remove('text-green-600', 'bg-green-50');
+                        btnLike.classList.add('text-gray-400');
+                        spanLikeCount.textContent = currentLikeCount - 1;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Error al registrar voto:", err);
+            alert("No se pudo registrar tu voto.");
+        } finally {
+            btnLike.disabled = false;
+            btnDislike.disabled = false;
+        }
+    };
+
+    btnLikes.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            procesarVoto(btn.dataset.resenaId, 'like', btn);
+        });
+    });
+
+    btnDislikes.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            procesarVoto(btn.dataset.resenaId, 'dislike', btn);
+        });
+    });
+}
+
 // =========================================================================
 // 4. NAVEGACIÓN Y BÚSQUEDA
 // =========================================================================
@@ -402,6 +542,8 @@ async function configurarNavegacionAutenticada() {
     const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (session && session.user) {
+        currentUserId = session.user.id; // Lo guardamos para la lógica de votos
+
         const { data: perfilData } = await supabaseClient
             .from('perfiles')
             .select('nombre_usuario')
