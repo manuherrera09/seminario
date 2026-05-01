@@ -409,7 +409,7 @@ function renderizarResenas(sortMode) {
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}">
+                    <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
                         <i class="fas fa-thumbs-up"></i> <span class="like-count">${resena.likes}</span>
                     </button>
                     <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
@@ -451,6 +451,8 @@ function configurarVotos() {
         const btnLike = contenedorResena.querySelector('.btn-like');
         const btnDislike = contenedorResena.querySelector('.btn-dislike');
 
+        const autorId = btnLike.dataset.autorId; // Para la notificacion
+
         const spanLikeCount = btnLike.querySelector('.like-count');
         const spanDislikeCount = btnDislike.querySelector('.dislike-count');
 
@@ -470,6 +472,12 @@ function configurarVotos() {
                     // Quitar like
                     await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
 
+                    // Borrar notificacion
+                    if(autorId && autorId !== currentUserId) {
+                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
+                    }
+
+                    // UI Update
                     btnLike.classList.remove('text-green-600', 'bg-green-50');
                     btnLike.classList.add('text-gray-400');
                     spanLikeCount.textContent = currentLikeCount - 1;
@@ -477,6 +485,17 @@ function configurarVotos() {
                     // Poner like (Upsert para sobreescribir dislike si existe)
                     await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'like' });
 
+                    // Crear notificacion si no es mia
+                    if (autorId && autorId !== currentUserId) {
+                        await supabaseClient.from('notificaciones').insert({
+                            usuario_id: autorId,
+                            actor_id: currentUserId,
+                            tipo: 'like',
+                            resena_id: resenaId
+                        });
+                    }
+
+                    // UI Update
                     btnLike.classList.remove('text-gray-400');
                     btnLike.classList.add('text-green-600', 'bg-green-50');
                     spanLikeCount.textContent = currentLikeCount + 1;
@@ -491,7 +510,7 @@ function configurarVotos() {
                 if (isCurrentlyDisliked) {
                     // Quitar dislike
                     await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
-
+                    // UI Update
                     btnDislike.classList.remove('text-red-600', 'bg-red-50');
                     btnDislike.classList.add('text-gray-400');
                     spanDislikeCount.textContent = currentDislikeCount - 1;
@@ -499,6 +518,12 @@ function configurarVotos() {
                     // Poner dislike
                     await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
 
+                    // Si paso de Like a Dislike, borramos la notificacion de Like
+                    if (isCurrentlyLiked && autorId && autorId !== currentUserId) {
+                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
+                    }
+
+                    // UI Update
                     btnDislike.classList.remove('text-gray-400');
                     btnDislike.classList.add('text-red-600', 'bg-red-50');
                     spanDislikeCount.textContent = currentDislikeCount + 1;
@@ -535,106 +560,149 @@ function configurarVotos() {
 }
 
 // =========================================================================
-// 4. NAVEGACIÓN Y BÚSQUEDA
+// 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
-async function configurarNavegacionAutenticada() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+async function configurarNotificaciones() {
+    const notifBtn = document.getElementById('nav-notifications-btn');
+    const notifDropdown = document.getElementById('nav-notifications-dropdown');
+    const notifBadge = document.getElementById('nav-notifications-badge');
+    const notifList = document.getElementById('nav-notifications-list');
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
 
-    if (session && session.user) {
-        currentUserId = session.user.id; // Lo guardamos para la lógica de votos
+    if (!notifBtn || !currentUserId) return;
 
-        const { data: perfilData } = await supabaseClient
-            .from('perfiles')
-            .select('nombre_usuario')
-            .eq('id', session.user.id)
-            .single();
+    // 1. Cargar notificaciones al iniciar
+    await cargarYRenderizarNotificaciones();
 
-        let userDisplayName = session.user.email;
-        if (perfilData && perfilData.nombre_usuario) {
-            userDisplayName = perfilData.nombre_usuario;
+    // 2. Toggle del dropdown
+    notifBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('hidden');
+    });
+
+    // Cerrar si hace click afuera
+    document.addEventListener('click', (e) => {
+        if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
+            notifDropdown.classList.add('hidden');
         }
+    });
 
-        const userStatusDiv = document.getElementById('user-status');
-        if(userStatusDiv) {
-            userStatusDiv.innerHTML = `
-                <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
-                <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
-            `;
+    // 3. Marcar todas como leídas
+    markAllReadBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+            await supabaseClient
+                .from('notificaciones')
+                .update({ leida: true })
+                .eq('usuario_id', currentUserId)
+                .eq('leida', false);
 
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await supabaseClient.auth.signOut();
-                window.location.reload();
-            });
+            await cargarYRenderizarNotificaciones();
+            notifDropdown.classList.add('hidden');
+        } catch(err) {
+            console.error("Error marcando notificaciones leídas:", err);
         }
-    }
-}
+    });
 
-let navRestaurantesCacheados = [];
+    async function cargarYRenderizarNotificaciones() {
+        try {
+            const { data: notificaciones, error } = await supabaseClient
+                .from('notificaciones')
+                .select(`
+                    id, tipo, leida, created_at, resena_id,
+                    actor:actor_id (id, nombre_usuario, imagen_url),
+                    resenas:resena_id (id_restaurante, restaurantes(nombre))
+                `)
+                .eq('usuario_id', currentUserId)
+                .order('created_at', { ascending: false })
+                .limit(20);
 
-async function cargarRestaurantesParaBusquedaNav() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('restaurantes')
-            .select('id, nombre');
+            if (error) throw error;
 
-        if (!error && data) {
-            navRestaurantesCacheados = data;
-            configurarBarraBusquedaNav();
-        }
-    } catch (err) {
-        console.error("Error cargando búsqueda nav:", err);
-    }
-}
+            notifList.innerHTML = '';
 
-function configurarBarraBusquedaNav() {
-    const searchInput = document.getElementById('nav-search-input');
-    const suggestionsContainer = document.getElementById('nav-search-suggestions');
-    const suggestionsList = document.getElementById('nav-suggestions-list');
+            const unreadCount = notificaciones.filter(n => !n.leida).length;
 
-    if (!searchInput) return;
+            if (unreadCount > 0) {
+                notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                notifBadge.classList.remove('hidden');
+            } else {
+                notifBadge.classList.add('hidden');
+            }
 
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
+            if (notificaciones.length === 0) {
+                notifList.innerHTML = '<li class="px-4 py-4 text-center text-gray-500 text-sm">No tienes notificaciones</li>';
+                return;
+            }
 
-        if (query === '') {
-            suggestionsContainer.classList.add('hidden');
-            return;
-        }
-
-        const coincidencias = navRestaurantesCacheados.filter(rest =>
-            rest.nombre.toLowerCase().includes(query)
-        );
-
-        suggestionsList.innerHTML = '';
-
-        if (coincidencias.length === 0) {
-            suggestionsList.innerHTML = '<li class="px-4 py-3 text-gray-500 text-sm text-center">No se encontraron restaurantes</li>';
-        } else {
-            const topResultados = coincidencias.slice(0, 5);
-            topResultados.forEach(rest => {
+            notificaciones.forEach(notif => {
                 const li = document.createElement('li');
-                li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center text-sm';
+                const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
+                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
 
-                const regex = new RegExp(`(${query})`, "gi");
-                const nombreResaltado = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+                const actorNombre = notif.actor ? notif.actor.nombre_usuario : 'Alguien';
+                const actorImg = notif.actor && notif.actor.imagen_url ? notif.actor.imagen_url : null;
 
-                li.innerHTML = `<i class="fas fa-utensils text-gray-400 mr-3"></i> ${nombreResaltado}`;
+                let iconHtml = actorImg
+                    ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
+                    : `<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
 
-                li.addEventListener('click', () => {
-                    window.location.href = `restaurante.html?id=${rest.id}`;
+                let mensaje = '';
+                let urlDestino = '#';
+
+                if (notif.tipo === 'like') {
+                    // Chequeo de seguridad por si borraron la reseña/restaurante
+                    const restNombre = notif.resenas && notif.resenas.restaurantes ? notif.resenas.restaurantes.nombre : 'un restaurante';
+                    const restId = notif.resenas ? notif.resenas.id_restaurante : null;
+
+                    mensaje = `<strong>${actorNombre}</strong> le dio me gusta a tu reseña en <strong>${restNombre}</strong>.`;
+
+                    if(restId) {
+                       // Opcional: Al tocar ir directo al restaurante y luego marcamos como leida
+                       urlDestino = `restaurante.html?id=${restId}`;
+                    }
+                } else if (notif.tipo === 'follow') {
+                    mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
+                    urlDestino = `perfil.html?id=${notif.actor.id}`;
+                }
+
+                // Parsear fecha
+                const fecha = new Date(notif.created_at);
+                const hoy = new Date();
+                let displayDate = '';
+                if (fecha.toDateString() === hoy.toDateString()) {
+                    displayDate = 'Hoy, ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    displayDate = fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                }
+
+                li.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="mt-1">${iconHtml}</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-800 leading-snug">${mensaje}</p>
+                            <span class="text-[10px] text-gray-400 mt-1 block">${displayDate}</span>
+                        </div>
+                        ${!notif.leida ? '<div class="w-2 h-2 bg-[#c41200] rounded-full mt-2"></div>' : ''}
+                    </div>
+                `;
+
+                li.addEventListener('click', async () => {
+                    // Marcar como leída al tocar
+                    if (!notif.leida) {
+                        await supabaseClient.from('notificaciones').update({ leida: true }).eq('id', notif.id);
+                    }
+                    if (urlDestino !== '#') {
+                        window.location.href = urlDestino;
+                    }
                 });
 
-                suggestionsList.appendChild(li);
+                notifList.appendChild(li);
             });
-        }
 
-        suggestionsContainer.classList.remove('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-            suggestionsContainer.classList.add('hidden');
+        } catch (err) {
+            console.error("Error obteniendo notificaciones:", err);
         }
-    });
+    }
 }
