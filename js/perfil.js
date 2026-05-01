@@ -1058,13 +1058,10 @@ async function configurarNotificaciones() {
 
     async function cargarYRenderizarNotificaciones() {
         try {
+            // Hacemos el fetch en dos pasos para evitar conflictos con los joins complejos
             const { data: notificaciones, error } = await supabaseClient
                 .from('notificaciones')
-                .select(`
-                    id, tipo, leida, created_at, resena_id,
-                    actor:actor_id (id, nombre_usuario, imagen_url),
-                    resenas:resena_id (id_restaurante, restaurantes(nombre))
-                `)
+                .select('*')
                 .eq('usuario_id', currentSessionUserId)
                 .order('created_at', { ascending: false })
                 .limit(20);
@@ -1087,13 +1084,35 @@ async function configurarNotificaciones() {
                 return;
             }
 
+            // Cargar datos extra (actores y reseñas)
+            const actorIds = [...new Set(notificaciones.map(n => n.actor_id))];
+            const resenasIds = [...new Set(notificaciones.filter(n => n.resena_id).map(n => n.resena_id))];
+
+            let actoresMap = {};
+            let resenasMap = {};
+
+            if (actorIds.length > 0) {
+                const { data: actores } = await supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url').in('id', actorIds);
+                if (actores) actores.forEach(a => actoresMap[a.id] = a);
+            }
+
+            if (resenasIds.length > 0) {
+                const { data: resenasData } = await supabaseClient
+                    .from('resenas')
+                    .select('id, id_restaurante, restaurantes(nombre)')
+                    .in('id', resenasIds);
+
+                if (resenasData) resenasData.forEach(r => resenasMap[r.id] = r);
+            }
+
             notificaciones.forEach(notif => {
                 const li = document.createElement('li');
                 const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
                 li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
 
-                const actorNombre = notif.actor ? notif.actor.nombre_usuario : 'Alguien';
-                const actorImg = notif.actor && notif.actor.imagen_url ? notif.actor.imagen_url : null;
+                const actor = actoresMap[notif.actor_id];
+                const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
+                const actorImg = actor && actor.imagen_url ? actor.imagen_url : null;
 
                 let iconHtml = actorImg
                     ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
@@ -1103,8 +1122,9 @@ async function configurarNotificaciones() {
                 let urlDestino = '#';
 
                 if (notif.tipo === 'like') {
-                    const restNombre = notif.resenas && notif.resenas.restaurantes ? notif.resenas.restaurantes.nombre : 'un restaurante';
-                    const restId = notif.resenas ? notif.resenas.id_restaurante : null;
+                    const resenaInfo = resenasMap[notif.resena_id];
+                    const restNombre = resenaInfo && resenaInfo.restaurantes ? resenaInfo.restaurantes.nombre : 'un restaurante';
+                    const restId = resenaInfo ? resenaInfo.id_restaurante : null;
 
                     mensaje = `<strong>${actorNombre}</strong> le dio me gusta a tu reseña en <strong>${restNombre}</strong>.`;
 
@@ -1113,9 +1133,7 @@ async function configurarNotificaciones() {
                     }
                 } else if (notif.tipo === 'follow') {
                     mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
-                    if (notif.actor && notif.actor.id) {
-                        urlDestino = `perfil.html?id=${notif.actor.id}`;
-                    }
+                    urlDestino = `perfil.html?id=${notif.actor_id}`;
                 }
 
                 // Parsear fecha
@@ -1154,6 +1172,7 @@ async function configurarNotificaciones() {
 
         } catch (err) {
             console.error("Error obteniendo notificaciones:", err);
+            notifList.innerHTML = '<li class="px-4 py-4 text-center text-red-500 text-sm">Error al cargar</li>';
         }
     }
 }
