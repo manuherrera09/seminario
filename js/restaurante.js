@@ -664,7 +664,9 @@ async function configurarNotificaciones() {
                     }
                 } else if (notif.tipo === 'follow') {
                     mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
-                    urlDestino = `perfil.html?id=${notif.actor.id}`;
+                    if (notif.actor && notif.actor.id) {
+                        urlDestino = `perfil.html?id=${notif.actor.id}`;
+                    }
                 }
 
                 // Parsear fecha
