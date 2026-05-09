@@ -39,7 +39,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-10">
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
   <div class="container mx-auto flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
     <div class="flex items-center space-x-4">
@@ -50,12 +50,15 @@
         <!-- El contenido de este div cambiará dinámicamente con JS si hay sesión -->
         <a href="login.html" id="nav-login-btn" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
         <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+
+        <!-- Contenedor base de notificaciones para que JS lo pueda inyectar si no estaba -->
+        <div id="nav-notifications-container" class="relative hidden ml-3 z-50"></div>
       </div>
     </div>
   </div>
 </nav>
 
-<div class="relative bg-gray-900 overflow-hidden">
+<div class="relative bg-gray-900 overflow-hidden relative z-10">
   <!-- Background Carousel with overlay -->
   <div class="bg-carousel" id="hero-carousel">
     <!-- Restaurante 1 (Original) -->

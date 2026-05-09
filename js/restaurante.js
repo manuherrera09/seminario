@@ -515,7 +515,7 @@ function configurarVotos() {
                     btnDislike.classList.add('text-gray-400');
                     spanDislikeCount.textContent = currentDislikeCount - 1;
                 } else {
-                    // Poner dislike
+                    // Poner dislike (Upsert)
                     await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
 
                     // Si paso de Like a Dislike, borramos la notificacion de Like
@@ -560,106 +560,177 @@ function configurarVotos() {
 }
 
 // =========================================================================
-// 4. NAVEGACIÓN Y BÚSQUEDA
+// 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
-async function configurarNavegacionAutenticada() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+async function configurarNotificaciones() {
+    const notifBtn = document.getElementById('nav-notifications-btn');
+    const notifDropdown = document.getElementById('nav-notifications-dropdown');
+    const notifBadge = document.getElementById('nav-notifications-badge');
+    const notifList = document.getElementById('nav-notifications-list');
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
 
-    if (session && session.user) {
-        currentUserId = session.user.id; // Lo guardamos para la lógica de votos
+    if (!notifBtn || !currentUserId) return;
 
-        const { data: perfilData } = await supabaseClient
-            .from('perfiles')
-            .select('nombre_usuario')
-            .eq('id', session.user.id)
-            .single();
+    // 1. Cargar notificaciones al iniciar
+    await cargarYRenderizarNotificaciones();
 
-        let userDisplayName = session.user.email;
-        if (perfilData && perfilData.nombre_usuario) {
-            userDisplayName = perfilData.nombre_usuario;
+    // 2. Toggle del dropdown
+    notifBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        notifDropdown.classList.toggle('hidden');
+    });
+
+    // Cerrar si hace click afuera
+    document.addEventListener('click', (e) => {
+        if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
+            notifDropdown.classList.add('hidden');
         }
+    });
 
-        const userStatusDiv = document.getElementById('user-status');
-        if(userStatusDiv) {
-            userStatusDiv.innerHTML = `
-                <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
-                <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
-            `;
+    // 3. Marcar todas como leídas
+    if(markAllReadBtn) {
+        // Remover listeners anteriores (útil si se llama multiples veces)
+        const newMarkBtn = markAllReadBtn.cloneNode(true);
+        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
 
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await supabaseClient.auth.signOut();
-                window.location.reload();
-            });
-        }
+        newMarkBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                await supabaseClient
+                    .from('notificaciones')
+                    .update({ leida: true })
+                    .eq('usuario_id', currentUserId)
+                    .eq('leida', false);
+
+                await cargarYRenderizarNotificaciones();
+                // Opcional: notifDropdown.classList.add('hidden');
+            } catch(err) {
+                console.error("Error marcando notificaciones leídas:", err);
+            }
+        });
     }
-}
 
-let navRestaurantesCacheados = [];
+    async function cargarYRenderizarNotificaciones() {
+        try {
+            // Hacemos el fetch en dos pasos para evitar conflictos con los joins complejos
+            const { data: notificaciones, error } = await supabaseClient
+                .from('notificaciones')
+                .select('*')
+                .eq('usuario_id', currentUserId)
+                .order('created_at', { ascending: false })
+                .limit(20);
 
-async function cargarRestaurantesParaBusquedaNav() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('restaurantes')
-            .select('id, nombre');
+            if (error) throw error;
 
-        if (!error && data) {
-            navRestaurantesCacheados = data;
-            configurarBarraBusquedaNav();
-        }
-    } catch (err) {
-        console.error("Error cargando búsqueda nav:", err);
-    }
-}
+            notifList.innerHTML = '';
 
-function configurarBarraBusquedaNav() {
-    const searchInput = document.getElementById('nav-search-input');
-    const suggestionsContainer = document.getElementById('nav-search-suggestions');
-    const suggestionsList = document.getElementById('nav-suggestions-list');
+            const unreadCount = notificaciones.filter(n => !n.leida).length;
 
-    if (!searchInput) return;
+            if (unreadCount > 0) {
+                notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                notifBadge.classList.remove('hidden');
+            } else {
+                notifBadge.classList.add('hidden');
+            }
 
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
+            if (notificaciones.length === 0) {
+                notifList.innerHTML = '<li class="px-4 py-4 text-center text-gray-500 text-sm">No tienes notificaciones</li>';
+                return;
+            }
 
-        if (query === '') {
-            suggestionsContainer.classList.add('hidden');
-            return;
-        }
+            // Cargar datos extra (actores y reseñas)
+            const actorIds = [...new Set(notificaciones.map(n => n.actor_id))];
+            const resenasIds = [...new Set(notificaciones.filter(n => n.resena_id).map(n => n.resena_id))];
 
-        const coincidencias = navRestaurantesCacheados.filter(rest =>
-            rest.nombre.toLowerCase().includes(query)
-        );
+            let actoresMap = {};
+            let resenasMap = {};
 
-        suggestionsList.innerHTML = '';
+            if (actorIds.length > 0) {
+                const { data: actores } = await supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url').in('id', actorIds);
+                if (actores) actores.forEach(a => actoresMap[a.id] = a);
+            }
 
-        if (coincidencias.length === 0) {
-            suggestionsList.innerHTML = '<li class="px-4 py-3 text-gray-500 text-sm text-center">No se encontraron restaurantes</li>';
-        } else {
-            const topResultados = coincidencias.slice(0, 5);
-            topResultados.forEach(rest => {
+            if (resenasIds.length > 0) {
+                const { data: resenasData } = await supabaseClient
+                    .from('resenas')
+                    .select('id, id_restaurante, restaurantes(nombre)')
+                    .in('id', resenasIds);
+
+                if (resenasData) resenasData.forEach(r => resenasMap[r.id] = r);
+            }
+
+            notificaciones.forEach(notif => {
                 const li = document.createElement('li');
-                li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center text-sm';
+                const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
+                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
 
-                const regex = new RegExp(`(${query})`, "gi");
-                const nombreResaltado = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+                const actor = actoresMap[notif.actor_id];
+                const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
+                const actorImg = actor && actor.imagen_url ? actor.imagen_url : null;
 
-                li.innerHTML = `<i class="fas fa-utensils text-gray-400 mr-3"></i> ${nombreResaltado}`;
+                let iconHtml = actorImg
+                    ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
+                    : `<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
 
-                li.addEventListener('click', () => {
-                    window.location.href = `restaurante.html?id=${rest.id}`;
+                let mensaje = '';
+                let urlDestino = '#';
+
+                if (notif.tipo === 'like') {
+                    const resenaInfo = resenasMap[notif.resena_id];
+                    const restNombre = resenaInfo && resenaInfo.restaurantes ? resenaInfo.restaurantes.nombre : 'un restaurante';
+                    const restId = resenaInfo ? resenaInfo.id_restaurante : null;
+
+                    mensaje = `<strong>${actorNombre}</strong> le dio me gusta a tu reseña en <strong>${restNombre}</strong>.`;
+
+                    if(restId) {
+                       urlDestino = `restaurante.html?id=${restId}`;
+                    }
+                } else if (notif.tipo === 'follow') {
+                    mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
+                    urlDestino = `perfil.html?id=${notif.actor_id}`;
+                }
+
+                // Parsear fecha
+                const fecha = new Date(notif.created_at);
+                const hoy = new Date();
+                let displayDate = '';
+                if (fecha.toDateString() === hoy.toDateString()) {
+                    displayDate = 'Hoy, ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    displayDate = fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                }
+
+                li.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="mt-1">${iconHtml}</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-800 leading-snug">${mensaje}</p>
+                            <span class="text-[10px] text-gray-400 mt-1 block">${displayDate}</span>
+                        </div>
+                        ${!notif.leida ? '<div class="w-2 h-2 bg-[#c41200] rounded-full mt-2"></div>' : ''}
+                    </div>
+                `;
+
+                li.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    // Marcar como leída al tocar
+                    if (!notif.leida) {
+                        await supabaseClient.from('notificaciones').update({ leida: true }).eq('id', notif.id);
+                    }
+                    if (urlDestino !== '#') {
+                        window.location.href = urlDestino;
+                    }
                 });
 
-                suggestionsList.appendChild(li);
+                notifList.appendChild(li);
             });
-        }
 
-        suggestionsContainer.classList.remove('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-            suggestionsContainer.classList.add('hidden');
+        } catch (err) {
+            console.error("Error obteniendo notificaciones:", err);
+            notifList.innerHTML = '<li class="px-4 py-4 text-center text-red-500 text-sm">Error al cargar</li>';
         }
-    });
+    }
 }

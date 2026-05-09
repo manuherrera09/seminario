@@ -55,19 +55,19 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
 
               <!-- Contenedor Notificaciones -->
-              <div id="nav-notifications-container" class="relative ml-2 mr-2 z-50">
+              <div id="nav-notifications-container" class="relative ml-2 mr-2">
                 <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
-                  <i class="fas fa-bell text-xl pointer-events-none"></i>
-                  <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
+                  <i class="fas fa-bell text-xl"></i>
+                  <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
                 </button>
 
                 <!-- Dropdown -->
-                <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-[100] border border-gray-100 text-gray-800">
-                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center relative">
+                <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
+                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center">
                     <h3 class="font-bold text-sm">Notificaciones</h3>
-                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer z-50 pointer-events-auto">Marcar leídas</button>
+                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer">Marcar leídas</button>
                   </div>
-                  <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
+                  <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white">
                     <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
                   </ul>
                 </div>
@@ -304,7 +304,7 @@ async function cargarResenasRecientes() {
       const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
       const resenaDiv = document.createElement('div');
-      resenaDiv.className = "bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition flex flex-col h-full relative";
+      resenaDiv.className = "bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition flex flex-col h-full relative z-10";
 
       resenaDiv.innerHTML = `
         <div class="flex justify-between items-start mb-4 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante || resena.restaurante_id}'">
@@ -324,11 +324,11 @@ async function cargarResenasRecientes() {
 
         <!-- Botones de Voto -->
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-50">
-            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
-                <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
+            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
+                <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${likesCount}</span>
             </button>
-            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
-                <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
+            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20" data-resena-id="${resena.id}">
+                <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${dislikesCount}</span>
             </button>
         </div>
       `;
@@ -460,6 +460,7 @@ function configurarVotos() {
 
     btnLikes.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation(); // Evitar click en la tarjeta que lleva al restaurante
             procesarVoto(btn.dataset.resenaId, 'like', btn);
         });
@@ -467,6 +468,7 @@ function configurarVotos() {
 
     btnDislikes.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation(); // Evitar click en la tarjeta
             procesarVoto(btn.dataset.resenaId, 'dislike', btn);
         });
@@ -477,7 +479,7 @@ function configurarVotos() {
 // 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
-async function configurarNotificaciones() {
+function configurarNotificaciones() {
     const notifBtn = document.getElementById('nav-notifications-btn');
     const notifDropdown = document.getElementById('nav-notifications-dropdown');
     const notifBadge = document.getElementById('nav-notifications-badge');
@@ -487,7 +489,7 @@ async function configurarNotificaciones() {
     if (!notifBtn || !currentUserId) return;
 
     // 1. Cargar notificaciones al iniciar
-    await cargarYRenderizarNotificaciones();
+    cargarYRenderizarNotificaciones();
 
     // 2. Toggle del dropdown
     notifBtn.addEventListener('click', (e) => {
@@ -505,11 +507,7 @@ async function configurarNotificaciones() {
 
     // 3. Marcar todas como leídas
     if(markAllReadBtn) {
-        // Remover listeners anteriores (útil si se llama multiples veces)
-        const newMarkBtn = markAllReadBtn.cloneNode(true);
-        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
-
-        newMarkBtn.addEventListener('click', async (e) => {
+        markAllReadBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
             try {
@@ -520,7 +518,6 @@ async function configurarNotificaciones() {
                     .eq('leida', false);
 
                 await cargarYRenderizarNotificaciones();
-                // Opcional: notifDropdown.classList.add('hidden');
             } catch(err) {
                 console.error("Error marcando notificaciones leídas:", err);
             }
@@ -628,7 +625,8 @@ async function configurarNotificaciones() {
                     </div>
                 `;
 
-                li.addEventListener('click', async () => {
+                li.addEventListener('click', async (e) => {
+                    e.preventDefault();
                     // Marcar como leída al tocar
                     if (!notif.leida) {
                         await supabaseClient.from('notificaciones').update({ leida: true }).eq('id', notif.id);
