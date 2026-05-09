@@ -55,17 +55,17 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
 
               <!-- Contenedor Notificaciones -->
-              <div id="nav-notifications-container" class="relative ml-2 mr-2">
-                <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1">
-                  <i class="fas fa-bell text-xl"></i>
-                  <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+              <div id="nav-notifications-container" class="relative ml-2 mr-2 z-50">
+                <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
+                  <i class="fas fa-bell text-xl pointer-events-none"></i>
+                  <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
                 </button>
 
                 <!-- Dropdown -->
-                <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
-                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center z-50 relative">
+                <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-[100] border border-gray-100 text-gray-800">
+                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center relative">
                     <h3 class="font-bold text-sm">Notificaciones</h3>
-                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
+                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer z-50 pointer-events-auto">Marcar leídas</button>
                   </div>
                   <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
                     <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
               </div>
 
-              <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition">Salir</button>
+              <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Salir</button>
           `;
 
       // Inicializar Notificaciones
@@ -504,22 +504,28 @@ async function configurarNotificaciones() {
     });
 
     // 3. Marcar todas como leídas
-    markAllReadBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-            await supabaseClient
-                .from('notificaciones')
-                .update({ leida: true })
-                .eq('usuario_id', currentUserId)
-                .eq('leida', false);
+    if(markAllReadBtn) {
+        // Remover listeners anteriores (útil si se llama multiples veces)
+        const newMarkBtn = markAllReadBtn.cloneNode(true);
+        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
 
-            await cargarYRenderizarNotificaciones();
-            notifDropdown.classList.add('hidden');
-        } catch(err) {
-            console.error("Error marcando notificaciones leídas:", err);
-        }
-    });
+        newMarkBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                await supabaseClient
+                    .from('notificaciones')
+                    .update({ leida: true })
+                    .eq('usuario_id', currentUserId)
+                    .eq('leida', false);
+
+                await cargarYRenderizarNotificaciones();
+                // Opcional: notifDropdown.classList.add('hidden');
+            } catch(err) {
+                console.error("Error marcando notificaciones leídas:", err);
+            }
+        });
+    }
 
     async function cargarYRenderizarNotificaciones() {
         try {
