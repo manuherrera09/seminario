@@ -383,32 +383,35 @@ async function cargarHistorialResenas() {
         const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
         const divResena = document.createElement('div');
-        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white";
+        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white cursor-pointer";
+        divResena.onclick = () => {
+            window.location.href = `restaurante.html?id=${resena.id_restaurante}`;
+        };
 
         const ratingGeneral = (resena.puntuacion_general !== null && resena.puntuacion_general !== undefined)
                                 ? Number(resena.puntuacion_general).toFixed(1)
                                 : 'N/A';
 
         divResena.innerHTML = `
-                    <div class="flex justify-between items-start mb-2 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+                    <div class="flex justify-between items-start mb-2">
                       <div>
                         <h3 class="font-bold text-lg text-[#c41200] hover:underline">${nombreRestaurante}</h3>
                         <p class="text-xs text-gray-400">Escrita el ${fechaFormateada}</p>
                       </div>
                     </div>
 
-                    <div class="mb-3 flex items-center gap-2 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+                    <div class="mb-3 flex items-center gap-2">
                       <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${ratingGeneral} ★</span>
                     </div>
 
-                    <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+                    <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded">
                        <span><strong>Comida:</strong> ${resena.calidad_comida} ★</span>
                        <span><strong>Atención:</strong> ${resena.atencion} ★</span>
                        <span><strong>Precio:</strong> ${resena.precio} ★</span>
                        ${resena.ambiente ? `<span><strong>Ambiente:</strong> ${resena.ambiente} ★</span>` : ''}
                     </div>
 
-                    <p class="text-gray-700 text-sm mb-3 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">${resena.comentario}</p>
+                    <p class="text-gray-700 text-sm">${resena.comentario}</p>
 
                     <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
                         <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${profileUserId}">
