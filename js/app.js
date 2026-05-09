@@ -63,11 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 <!-- Dropdown -->
                 <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
-                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center">
+                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center z-50 relative">
                     <h3 class="font-bold text-sm">Notificaciones</h3>
-                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline">Marcar leídas</button>
+                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
                   </div>
-                  <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white">
+                  <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
                     <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
                   </ul>
                 </div>
@@ -429,7 +429,7 @@ function configurarVotos() {
                     btnDislike.classList.add('text-gray-400');
                     spanDislikeCount.textContent = currentDislikeCount - 1;
                 } else {
-                    // Poner dislike
+                    // Poner dislike (Upsert)
                     await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
 
                     // Si paso de Like a Dislike, borramos la notificacion de Like
@@ -492,6 +492,7 @@ async function configurarNotificaciones() {
     // 2. Toggle del dropdown
     notifBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         notifDropdown.classList.toggle('hidden');
     });
 
@@ -505,6 +506,7 @@ async function configurarNotificaciones() {
     // 3. Marcar todas como leídas
     markAllReadBtn.addEventListener('click', async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         try {
             await supabaseClient
                 .from('notificaciones')

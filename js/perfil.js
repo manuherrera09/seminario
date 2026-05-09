@@ -1031,7 +1031,7 @@ async function configurarNotificaciones() {
 
     // 2. Toggle del dropdown
     notifBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+        e.preventDefault();
         notifDropdown.classList.toggle('hidden');
     });
 
@@ -1044,7 +1044,7 @@ async function configurarNotificaciones() {
 
     // 3. Marcar todas como leídas
     markAllReadBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
+        e.preventDefault();
         try {
             await supabaseClient
                 .from('notificaciones')
