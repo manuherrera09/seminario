@@ -17,7 +17,11 @@ let currentUserId = null; // Guardar ID de sesión para los votos
 document.addEventListener('DOMContentLoaded', async () => {
 
     // Configurar Auth y Nav
-    await configurarNavegacionAutenticada();
+    try {
+        await configurarNavegacionAutenticada();
+    } catch(err) {
+        console.error("Error configurando nav:", err);
+    }
 
     // Obtener ID del restaurante de la URL (ej: restaurante.html?id=5)
     const urlParams = new URLSearchParams(window.location.search);
@@ -410,10 +414,10 @@ function renderizarResenas(sortMode) {
 
                 <div class="flex items-center gap-2">
                     <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
-                        <i class="fas fa-thumbs-up"></i> <span class="like-count">${resena.likes}</span>
+                        <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${resena.likes}</span>
                     </button>
                     <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
-                        <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${resena.dislikes}</span>
+                        <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${resena.dislikes}</span>
                     </button>
                 </div>
             </div>
@@ -546,6 +550,7 @@ function configurarVotos() {
 
     btnLikes.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation(); // Evitar click en la tarjeta que lleva al restaurante
             procesarVoto(btn.dataset.resenaId, 'like', btn);
         });
@@ -553,6 +558,7 @@ function configurarVotos() {
 
     btnDislikes.forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation(); // Evitar click en la tarjeta
             procesarVoto(btn.dataset.resenaId, 'dislike', btn);
         });

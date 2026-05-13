@@ -29,62 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(nextSlide, 5000);
   }
 
-  // ---- Autenticación ----
-  // Verificamos si hay una sesión activa
-  const { data: { session }, error } = await supabaseClient.auth.getSession();
-
-  if (session && session.user) {
-    currentUserId = session.user.id;
-    // El usuario está logueado
-    // Buscamos su información en la tabla perfiles
-    const { data: perfilData } = await supabaseClient
-      .from('perfiles')
-      .select('nombre_usuario')
-      .eq('id', session.user.id)
-      .single();
-
-    let userDisplayName = session.user.email; // Por defecto mostramos el email
-    if (perfilData && perfilData.nombre_usuario) {
-      userDisplayName = perfilData.nombre_usuario;
-    }
-
-    // Actualizamos la barra de navegación superior (incluye notificaciones)
-    const userStatusDiv = document.getElementById('user-status');
-    if (userStatusDiv) {
-      userStatusDiv.innerHTML = `
-              <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
-
-              <!-- Contenedor Notificaciones -->
-              <div id="nav-notifications-container" class="relative ml-2 mr-2">
-                <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
-                  <i class="fas fa-bell text-xl"></i>
-                  <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
-                </button>
-
-                <!-- Dropdown -->
-                <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
-                  <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center">
-                    <h3 class="font-bold text-sm">Notificaciones</h3>
-                    <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer">Marcar leídas</button>
-                  </div>
-                  <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white">
-                    <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
-                  </ul>
-                </div>
-              </div>
-
-              <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Salir</button>
-          `;
-
-      // Inicializar Notificaciones
-      configurarNotificaciones();
-
-      // Agregamos el evento al nuevo botón de cerrar sesión
-      document.getElementById('logout-btn').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        window.location.reload(); // Recargamos la página al salir
-      });
-    }
+  // ---- Autenticación y NavBar ----
+  try {
+      await configurarNavegacionAutenticada();
+  } catch (err) {
+      console.error("Error al configurar navegación:", err);
   }
 
   // ---- Cargar lista de restaurantes y usuarios para la búsqueda ----
@@ -95,6 +44,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarResenasRecientes();
   }
 });
+
+async function configurarNavegacionAutenticada() {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+    if (session && session.user) {
+        currentUserId = session.user.id;
+
+        // Buscamos su información en la tabla perfiles
+        const { data: perfilData } = await supabaseClient
+            .from('perfiles')
+            .select('nombre_usuario')
+            .eq('id', session.user.id)
+            .single();
+
+        let userDisplayName = session.user.email; // Por defecto mostramos el email
+        if (perfilData && perfilData.nombre_usuario) {
+            userDisplayName = perfilData.nombre_usuario;
+        }
+
+        // Actualizamos la barra de navegación superior (incluye notificaciones)
+        const userStatusDiv = document.getElementById('user-status');
+        if (userStatusDiv) {
+            userStatusDiv.innerHTML = `
+                <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
+
+                <!-- Contenedor Notificaciones -->
+                <div id="nav-notifications-container" class="relative ml-2 mr-2">
+                    <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
+                    <i class="fas fa-bell text-xl pointer-events-none"></i>
+                    <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
+                    </button>
+
+                    <!-- Dropdown -->
+                    <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
+                    <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center z-50 relative pointer-events-auto">
+                        <h3 class="font-bold text-sm">Notificaciones</h3>
+                        <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline font-semibold cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
+                    </div>
+                    <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white">
+                        <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
+                    </ul>
+                    </div>
+                </div>
+
+                <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Salir</button>
+            `;
+
+            // Inicializar Notificaciones
+            configurarNotificaciones();
+
+            // Agregamos el evento al nuevo botón de cerrar sesión
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await supabaseClient.auth.signOut();
+                window.location.reload(); // Recargamos la página al salir
+            });
+        }
+    }
+}
 
 // =========================================================================
 // 3. LÓGICA DE BARRA DE BÚSQUEDA MIXTA (RESTAURANTES + USUARIOS)
@@ -479,7 +486,7 @@ function configurarVotos() {
 // 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
-function configurarNotificaciones() {
+async function configurarNotificaciones() {
     const notifBtn = document.getElementById('nav-notifications-btn');
     const notifDropdown = document.getElementById('nav-notifications-dropdown');
     const notifBadge = document.getElementById('nav-notifications-badge');
@@ -489,7 +496,7 @@ function configurarNotificaciones() {
     if (!notifBtn || !currentUserId) return;
 
     // 1. Cargar notificaciones al iniciar
-    cargarYRenderizarNotificaciones();
+    await cargarYRenderizarNotificaciones();
 
     // 2. Toggle del dropdown
     notifBtn.addEventListener('click', (e) => {
@@ -507,7 +514,11 @@ function configurarNotificaciones() {
 
     // 3. Marcar todas como leídas
     if(markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', async (e) => {
+        // Remover listeners anteriores (útil si se llama multiples veces)
+        const newMarkBtn = markAllReadBtn.cloneNode(true);
+        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
+
+        newMarkBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
             try {
@@ -518,6 +529,7 @@ function configurarNotificaciones() {
                     .eq('leida', false);
 
                 await cargarYRenderizarNotificaciones();
+                // Opcional: notifDropdown.classList.add('hidden');
             } catch(err) {
                 console.error("Error marcando notificaciones leídas:", err);
             }
