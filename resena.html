@@ -66,22 +66,26 @@
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-10">
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
   <div class="container mx-auto flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
     <div class="flex items-center space-x-4">
       <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
       <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
       <a href="perfil.html" class="hover:text-red-200 transition ml-4">Mi Perfil</a>
-      <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3">
-        <a href="login.html" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
-        <a href="registro.html" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+      <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3 relative">
+        <!-- El contenido de este div cambiará dinámicamente con JS si hay sesión -->
+        <a href="login.html" id="nav-login-btn" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
+        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+
+        <!-- Contenedor base de notificaciones para que JS lo pueda inyectar si no estaba -->
+        <div id="nav-notifications-container" class="relative hidden ml-3 z-50"></div>
       </div>
     </div>
   </div>
 </nav>
 
-<div class="flex-grow flex flex-col">
+<div class="flex-grow flex flex-col relative z-10">
   <main class="container mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow">
 
     <section class="bg-white p-6 rounded-lg shadow-md md:col-span-2 lg:col-span-1">
@@ -209,38 +213,64 @@
   </main>
 </div>
 
-<footer class="bg-gray-800 text-white pt-10 pb-6 mt-auto w-full">
+<footer class="bg-gray-800 text-white pt-12 pb-8 mt-12 relative z-10">
   <div class="container mx-auto px-6">
-    <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-6">
-      <div class="mb-6 md:mb-0 text-center md:text-left">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-gray-700 pb-8">
+
+      <!-- Columna 1: Marca y descripción -->
+      <div class="md:col-span-1">
         <h3 class="text-2xl font-bold text-red-400">TrackEat</h3>
-        <p class="text-gray-400 mt-2 text-sm max-w-sm">Tu guía de confianza para encontrar las mejores experiences gastronómicas basadas en opiniones reales.</p>
+        <p class="text-gray-400 mt-4 text-sm leading-relaxed">
+          Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.
+        </p>
       </div>
 
-      <div class="flex flex-col items-center md:items-start">
-        <h4 class="text-lg font-semibold mb-4">Síguenos en nuestras redes</h4>
-        <div class="flex space-x-6">
-          <a href="#" class="text-gray-400 hover:text-pink-500 transition-colors duration-300 flex flex-col items-center">
-            <i class="fab fa-instagram text-2xl mb-1"></i>
-            <span class="text-xs">@trackeat</span>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-red-400 transition-colors duration-300 flex flex-col items-center">
-            <i class="fab fa-twitter text-2xl mb-1"></i>
-            <span class="text-xs">@trackeat</span>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-red-600 transition-colors duration-300 flex flex-col items-center">
-            <i class="fab fa-facebook text-2xl mb-1"></i>
-            <span class="text-xs">/trackeat</span>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-black hover:bg-white hover:rounded-full transition-colors duration-300 flex flex-col items-center">
-            <i class="fa-brands fa-tiktok text-2xl mb-1"></i>
-            <span class="text-xs">@trackeat</span>
-          </a>
-        </div>
+      <!-- Columna 2: Nosotros -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Nosotros</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="nosotros.html" class="hover:text-red-400 transition-colors">Quiénes somos</a></li>
+          <li><a href="nosotros.html" class="hover:text-red-400 transition-colors">Nuestra misión</a></li>
+          <li><a href="nosotros.html" class="hover:text-red-400 transition-colors">Trabaja con nosotros</a></li>
+          <li><a href="nosotros.html" class="hover:text-red-400 transition-colors">Prensa</a></li>
+        </ul>
       </div>
+
+      <!-- Columna 3: Comunidad -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Comunidad</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="comunidad.html" class="hover:text-red-400 transition-colors">Top Reseñadores</a></li>
+          <li><a href="comunidad.html" class="hover:text-red-400 transition-colors">Reglas de la comunidad</a></li>
+          <li><a href="comunidad.html" class="hover:text-red-400 transition-colors">Foro</a></li>
+          <li><a href="comunidad.html" class="hover:text-red-400 transition-colors">Ayuda y Soporte</a></li>
+        </ul>
+      </div>
+
+      <!-- Columna 4: Empresas -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Empresas</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Reclama tu restaurante</a></li>
+          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Publicidad</a></li>
+          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">TrackEat for Business</a></li>
+          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Soporte para dueños</a></li>
+        </ul>
+      </div>
+
     </div>
-    <div class="text-center text-gray-500 text-sm mt-6">
-      &copy; 2026 TrackEat. Todos los derechos reservados.
+
+    <!-- Redes Sociales y Copyright -->
+    <div class="mt-8 flex flex-col md:flex-row justify-between items-center">
+      <div class="flex space-x-6 mb-4 md:mb-0">
+        <a href="#" class="text-gray-400 hover:text-pink-500 transition-colors text-xl"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="text-gray-400 hover:text-red-400 transition-colors text-xl"><i class="fab fa-twitter"></i></a>
+        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors text-xl"><i class="fab fa-facebook"></i></a>
+        <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-tiktok"></i></a>
+      </div>
+      <div class="text-gray-500 text-sm">
+        &copy; 2026 TrackEat. Todos los derechos reservados.
+      </div>
     </div>
   </div>
 </footer>
