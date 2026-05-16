@@ -4,7 +4,146 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nosotros - TrackEat</title>
+  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome para los iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
+    <div class="flex items-center space-x-4">
+      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container mx-auto p-6 flex-grow max-w-4xl mt-8">
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-6 border-b pb-4" id="que-es-trackeat">Qué es TrackEat</h1>
+
+    <div class="space-y-4 text-gray-700 leading-relaxed text-lg">
+        <p><strong>TrackEat</strong> es una plataforma nacida como un proyecto académico universitario, diseñada para transformar la manera en que los usuarios descubren y evalúan experiencias gastronómicas. Nuestra misión es conectar a los comensales con los mejores lugares para comer, basándonos en un pilar fundamental: <strong>la transparencia y la autenticidad de las opiniones.</strong></p>
+
+        <p>A diferencia de otros sitios tradicionales, en TrackEat nos enfocamos en combatir las reseñas falsas y los comentarios sesgados. Queremos que cada puntuación, foto y comentario refleje una experiencia real, ayudando a los usuarios a <strong>tomar decisiones informadas</strong> y permitiendo que los comercios gastronómicos destaquen por su verdadera calidad de servicio.</p>
+    </div>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="quienes-somos">Quiénes somos</h2>
+    <p class="text-gray-700 leading-relaxed text-lg mb-8 text-center md:text-left">
+      Somos un grupo de estudiantes, unidos por el desafío de desarrollar una solución digital innovadora para el sector gastronómico.
+    </p>
+
+    <!-- Contenedor para las fotos del equipo (6 columnas en pantallas grandes, 3 en móviles) -->
+    <div class="grid grid-cols-3 lg:grid-cols-6 gap-6">
+
+      <!-- Miembro 1 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+          <!-- Cuando tengas la foto, puedes usar la etiqueta img en lugar del icono: -->
+          <!-- <img src="URL_DE_TU_FOTO.jpg" alt="Nombre 1" class="w-full h-full object-cover"> -->
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 1</h3>
+      </div>
+
+      <!-- Miembro 2 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 2</h3>
+      </div>
+
+      <!-- Miembro 3 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 3</h3>
+      </div>
+
+      <!-- Miembro 4 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 4</h3>
+      </div>
+
+      <!-- Miembro 5 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 5</h3>
+      </div>
+
+      <!-- Miembro 6 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
+          <i class="fas fa-user text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="font-bold text-gray-800 text-sm">Nombre 6</h3>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="nuestra-mision">Nuestra misión</h2>
+    <p class="text-gray-700 leading-relaxed text-lg">
+      Nuestra misión es <strong>democratizar la opinión gastronómica.</strong> Buscamos construir un espacio digital donde la voz de cada comensal tenga valor real y donde los usuarios puedan descubrir su próximo lugar favorito sin sorpresas. Nos proponemos erradicar la desinformación en las reseñas online mediante una plataforma transparente, impulsando al mismo tiempo a los restaurantes locales a mejorar y conectar de forma honesta con su comunidad.
+    </p>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="contacto">Contacto</h2>
+    <p class="text-gray-600 mb-6">
+      ¿Tienes alguna duda, sugerencia o problema con la plataforma? Envíanos un mensaje y nos pondremos en contacto contigo lo antes posible.
+    </p>
+
+    <!-- Formulario de Contacto Mock -->
+    <form action="#" method="POST" class="max-w-xl mx-auto space-y-5" onsubmit="event.preventDefault(); alert('¡Gracias por tu mensaje! (Modo Mock)');">
+
+      <div>
+        <label for="email_contacto" class="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-envelope text-gray-400"></i>
+          </div>
+          <input type="email" id="email_contacto" name="email_contacto" required
+                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition"
+                 placeholder="tucorreo@ejemplo.com">
+        </div>
+      </div>
+
+      <div>
+        <label for="mensaje_contacto" class="block text-sm font-semibold text-gray-700 mb-1">Tu Mensaje</label>
+        <textarea id="mensaje_contacto" name="mensaje_contacto" rows="5" required
+                  class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition resize-y"
+                  placeholder="Escribe tu mensaje aquí..."></textarea>
+      </div>
+
+      <button type="submit" class="w-full sm:w-auto bg-[#c41200] text-white font-bold py-2 px-6 rounded-md hover:bg-red-800 transition shadow-sm flex items-center justify-center gap-2">
+        <i class="fas fa-paper-plane"></i> Enviar Mensaje
+      </button>
+
+    </form>
+  </div>
+
+</main>
+
+<footer class="bg-gray-800 text-white pt-8 pb-6 mt-12">
+  <div class="container mx-auto px-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
+  </div>
+</footer>
+
 </body>
 </html>
