@@ -71,7 +71,7 @@ async function configurarNavegacionAutenticada() {
 
                 <!-- Contenedor Notificaciones -->
                 <div id="nav-notifications-container" class="relative ml-2 mr-2">
-                    <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
+                    <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer z-50">
                     <i class="fas fa-bell text-xl pointer-events-none"></i>
                     <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
                     </button>
@@ -82,7 +82,7 @@ async function configurarNavegacionAutenticada() {
                         <h3 class="font-bold text-sm">Notificaciones</h3>
                         <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline font-semibold cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
                     </div>
-                    <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white">
+                    <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
                         <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
                     </ul>
                     </div>
@@ -588,7 +588,7 @@ async function configurarNotificaciones() {
             notificaciones.forEach(notif => {
                 const li = document.createElement('li');
                 const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
-                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
+                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass} pointer-events-auto`;
 
                 const actor = actoresMap[notif.actor_id];
                 const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';

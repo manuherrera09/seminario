@@ -4,7 +4,116 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comunidad - TrackEat</title>
+  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome para los iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
+    <div class="flex items-center space-x-4">
+      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container mx-auto p-6 flex-grow max-w-4xl mt-8">
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-6 border-b pb-4" id="normas">Normas de la Comunidad</h1>
+    <div class="space-y-4 text-gray-700 leading-relaxed text-lg">
+      <p>En TrackEat queremos mantener un ambiente respetuoso y útil para todos. Por favor, sigue estas pautas al dejar tus reseñas:</p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>Sé honesto y objetivo:</strong> Tu reseña debe basarse en tu propia experiencia real.</li>
+        <li><strong>Evita los insultos:</strong> No se tolerará lenguaje ofensivo, discriminatorio o violento ni hacia el personal del restaurante ni hacia otros usuarios.</li>
+        <li><strong>Sin spam:</strong> No utilices las reseñas para promocionar otros negocios o servicios.</li>
+        <li><strong>Protege la privacidad:</strong> No publiques nombres completos de empleados o datos personales sin su consentimiento.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="terminos">Términos y Condiciones</h2>
+    <div class="space-y-4 text-gray-700 leading-relaxed text-lg">
+      <p>Al utilizar TrackEat, aceptas los siguientes términos:</p>
+      <ul class="list-disc pl-6 space-y-2 text-base">
+        <li>El contenido generado por los usuarios (reseñas, fotos) es responsabilidad exclusiva de quien lo publica.</li>
+        <li>TrackEat se reserva el derecho de eliminar cualquier contenido que viole nuestras normas comunitarias sin previo aviso.</li>
+        <li>No garantizamos la exactitud de los horarios, menús o precios publicados en las reseñas de terceros.</li>
+        <li>Este sitio opera actualmente como un MVP académico, por lo que algunas funcionalidades podrían estar limitadas o en mantenimiento.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="comportamiento">Comportamiento del Usuario</h2>
+    <div class="space-y-4 text-gray-700 leading-relaxed text-lg">
+      <p>Para ser un gran crítico en TrackEat, te sugerimos estas buenas prácticas:</p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>Fundamenta tus calificaciones:</strong> Si pones 1 estrella o 5 estrellas, explica por qué. Los detalles ayudan mucho más que un simple "malo" o "excelente".</li>
+        <li><strong>Evalúa de forma justa:</strong> Recuerda separar la comida de la atención y el ambiente al calificar.</li>
+        <li><strong>Reporta problemas:</strong> Si ves una reseña falsa o inapropiada, utiliza las herramientas de la plataforma (próximamente) para alertar a los administradores.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="soporte">Soporte y Ayuda</h2>
+    <p class="text-gray-600 mb-6 text-lg">
+      ¿Tuviste un problema con tu cuenta o necesitas reportar una infracción? Llena el siguiente formulario y te asistiremos.
+    </p>
+
+    <!-- Formulario de Soporte Mock -->
+    <form action="#" method="POST" class="max-w-xl mx-auto space-y-5" onsubmit="event.preventDefault(); alert('¡Solicitud de soporte enviada con éxito! (Modo Mock)');">
+
+      <div>
+        <label for="asunto_soporte" class="block text-sm font-semibold text-gray-700 mb-1">Motivo de contacto</label>
+        <select id="asunto_soporte" required class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition bg-white">
+          <option value="">Selecciona una opción...</option>
+          <option value="reporte">Reportar una reseña inapropiada</option>
+          <option value="cuenta">Problemas con mi cuenta / login</option>
+          <option value="restaurante">Problemas con los datos de un restaurante</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="email_soporte" class="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-envelope text-gray-400"></i>
+          </div>
+          <input type="email" id="email_soporte" required
+                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition"
+                 placeholder="tucorreo@ejemplo.com">
+        </div>
+      </div>
+
+      <div>
+        <label for="mensaje_soporte" class="block text-sm font-semibold text-gray-700 mb-1">Detalla tu problema</label>
+        <textarea id="mensaje_soporte" rows="5" required
+                  class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition resize-y"
+                  placeholder="Por favor, incluye enlaces o nombres de usuario si es necesario..."></textarea>
+      </div>
+
+      <button type="submit" class="w-full sm:w-auto bg-[#c41200] text-white font-bold py-2 px-6 rounded-md hover:bg-red-800 transition shadow-sm flex items-center justify-center gap-2">
+        <i class="fas fa-life-ring"></i> Enviar a Soporte
+      </button>
+
+    </form>
+  </div>
+
+</main>
+
+<footer class="bg-gray-800 text-white pt-8 pb-6 mt-12">
+  <div class="container mx-auto px-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
+  </div>
+</footer>
+
 </body>
 </html>
