@@ -383,45 +383,52 @@ async function cargarHistorialResenas() {
         const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
         const divResena = document.createElement('div');
-        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white cursor-pointer";
-        divResena.onclick = () => {
-            window.location.href = `restaurante.html?id=${resena.id_restaurante}`;
-        };
+        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white relative";
 
-        const ratingGeneral = (resena.puntuacion_general !== null && resena.puntuacion_general !== undefined)
-                                ? Number(resena.puntuacion_general).toFixed(1)
-                                : 'N/A';
-
+        // El contenedor entero ya no redirige si hacemos clic en editar
         divResena.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 class="font-bold text-lg text-[#c41200] hover:underline">${nombreRestaurante}</h3>
-                        <p class="text-xs text-gray-400">Escrita el ${fechaFormateada}</p>
-                      </div>
-                    </div>
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <h3 class="font-bold text-lg text-[#c41200] hover:underline cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">${nombreRestaurante}</h3>
+                <p class="text-xs text-gray-400">Escrita el ${fechaFormateada}</p>
+              </div>
+              ${isOwnProfile ? `<button class="text-gray-400 hover:text-[#c41200] text-sm font-semibold transition bg-gray-100 hover:bg-red-50 px-3 py-1 rounded" onclick="abrirEdicionResena(${resena.id}, '${resena.comentario || ''}', ${resena.puntuacion_general || 0})"><i class="fas fa-edit"></i> Editar</button>` : ''}
+            </div>
 
-                    <div class="mb-3 flex items-center gap-2">
-                      <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${ratingGeneral} ★</span>
-                    </div>
+            <!-- Mostrar Reseña Normal -->
+            <div id="resena-display-${resena.id}">
+                <div class="mb-3 flex items-center gap-2 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+                  <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${resena.puntuacion_general ? Number(resena.puntuacion_general).toFixed(1) : 'N/A'} ★</span>
+                </div>
 
-                    <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded">
-                       <span><strong>Comida:</strong> ${resena.calidad_comida} ★</span>
-                       <span><strong>Atención:</strong> ${resena.atencion} ★</span>
-                       <span><strong>Precio:</strong> ${resena.precio} ★</span>
-                       ${resena.ambiente ? `<span><strong>Ambiente:</strong> ${resena.ambiente} ★</span>` : ''}
-                    </div>
+                <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
+                   <span><strong>Comida:</strong> ${resena.calidad_comida} ★</span>
+                   <span><strong>Atención:</strong> ${resena.atencion} ★</span>
+                   <span><strong>Precio:</strong> ${resena.precio} ★</span>
+                   ${resena.ambiente ? `<span><strong>Ambiente:</strong> ${resena.ambiente} ★</span>` : ''}
+                </div>
 
-                    <p class="text-gray-700 text-sm">${resena.comentario}</p>
+                <p class="text-gray-700 text-sm mb-3 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">${resena.comentario}</p>
+            </div>
 
-                    <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
-                        <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${profileUserId}">
-                            <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
-                        </button>
-                        <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
-                            <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
-                        </button>
-                    </div>
-                  `;
+            <!-- Formulario de Edición (Oculto) -->
+            <div id="resena-edit-${resena.id}" class="hidden mb-3">
+                <textarea id="edit-comentario-${resena.id}" class="w-full border p-2 rounded text-sm mb-2 focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" rows="3"></textarea>
+                <div class="flex gap-2 justify-end">
+                    <button class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs font-semibold hover:bg-gray-400" onclick="cerrarEdicionResena(${resena.id})">Cancelar</button>
+                    <button class="bg-[#c41200] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#a00e00]" onclick="guardarEdicionResena(${resena.id})">Guardar</button>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
+                <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${profileUserId}">
+                    <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
+                </button>
+                <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
+                    <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
+                </button>
+            </div>
+        `;
 
         container.appendChild(divResena);
       }
@@ -438,6 +445,50 @@ async function cargarHistorialResenas() {
     if (vacioMsg) vacioMsg.textContent = "Hubo un error al cargar las reseñas.";
   }
 }
+
+// Funciones globales para manejar la edición de la reseña
+window.abrirEdicionResena = function(id, comentarioActual, puntuacionGeneral) {
+    document.getElementById(`resena-display-${id}`).classList.add('hidden');
+    const editContainer = document.getElementById(`resena-edit-${id}`);
+    editContainer.classList.remove('hidden');
+
+    // Rellenamos el textarea con el comentario actual
+    const textarea = document.getElementById(`edit-comentario-${id}`);
+    textarea.value = comentarioActual;
+    textarea.focus();
+}
+
+window.cerrarEdicionResena = function(id) {
+    document.getElementById(`resena-edit-${id}`).classList.add('hidden');
+    document.getElementById(`resena-display-${id}`).classList.remove('hidden');
+}
+
+window.guardarEdicionResena = async function(id) {
+    const nuevoComentario = document.getElementById(`edit-comentario-${id}`).value.trim();
+
+    if(!nuevoComentario) {
+        alert("El comentario no puede estar vacío.");
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('resenas')
+            .update({ comentario: nuevoComentario })
+            .eq('id', id)
+            .eq('id_usuario', currentSessionUserId); // Seguridad extra
+
+        if (error) throw error;
+
+        // Recargar la página o volver a cargar las reseñas
+        cargarHistorialResenas();
+
+    } catch (err) {
+        console.error("Error al editar reseña:", err);
+        alert("Hubo un error al guardar los cambios.");
+    }
+}
+
 
 function configurarVotosEnPerfil() {
     const btnLikes = document.querySelectorAll('.btn-like');
