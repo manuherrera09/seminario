@@ -36,14 +36,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     await cargarDetallesRestaurante();
 
     // Configurar botón "Escribir Reseña"
-    document.getElementById('btn-dejar-resena').addEventListener('click', () => {
-        window.location.href = `resena.html?restaurante_id=${currentRestauranteId}`;
-    });
+    const btnDejarResena = document.getElementById('btn-dejar-resena');
+    if (btnDejarResena) {
+        btnDejarResena.addEventListener('click', () => {
+            window.location.href = `resena.html?restaurante_id=${currentRestauranteId}`;
+        });
+    }
 
     // Configurar filtro de reseñas
-    document.getElementById('sort-reviews').addEventListener('change', (e) => {
-        renderizarResenas(e.target.value);
-    });
+    const sortReviews = document.getElementById('sort-reviews');
+    if (sortReviews) {
+        sortReviews.addEventListener('change', (e) => {
+            renderizarResenas(e.target.value);
+        });
+    }
 
     // Cargar lista para la barra de búsqueda superior
     cargarRestaurantesParaBusquedaNav();
