@@ -11,22 +11,20 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let restaurantesCacheados = [];
 let perfilesCacheados = [];
 let currentUserId = null;
+let navAuthReady = false;
 
-// =========================================================================
-// 2. LÓGICA DEL CARRUSEL DE FONDO Y AUTENTICACIÓN
-// =========================================================================
+// Evento principal para App.js y para disparar la inicialización de otras páginas
 document.addEventListener('DOMContentLoaded', async () => {
   // ---- Carrusel ----
   const slides = document.querySelectorAll('.bg-slide');
-  let currentSlide = 0;
-
-  const nextSlide = () => {
-    slides[currentSlide].classList.remove('active');
-    currentSlide = (currentSlide + 1) % slides.length;
-    slides[currentSlide].classList.add('active');
-  };
   if (slides.length > 0) {
-    setInterval(nextSlide, 5000);
+      let currentSlide = 0;
+      const nextSlide = () => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+      };
+      setInterval(nextSlide, 5000);
   }
 
   // ---- Autenticación y NavBar ----
@@ -34,6 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       await configurarNavegacionAutenticada();
   } catch (err) {
       console.error("Error al configurar navegación:", err);
+  } finally {
+      navAuthReady = true;
+      // Disparar evento para que otras páginas sepan que la sesión está lista
+      document.dispatchEvent(new Event('navAuthReady'));
   }
 
   // ---- Cargar lista de restaurantes y usuarios para la búsqueda ----
@@ -64,42 +66,44 @@ async function configurarNavegacionAutenticada() {
         }
 
         // Actualizamos la barra de navegación superior (incluye notificaciones)
-        const userStatusDiv = document.getElementById('user-status');
-        if (userStatusDiv) {
-            userStatusDiv.innerHTML = `
-                <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
+        const userStatusDivs = document.querySelectorAll('#user-status');
+        userStatusDivs.forEach(userStatusDiv => {
+            if (userStatusDiv) {
+                userStatusDiv.innerHTML = `
+                    <span class="text-sm text-white font-medium hidden md:inline">Hola, ${userDisplayName}</span>
 
-                <!-- Contenedor Notificaciones -->
-                <div id="nav-notifications-container" class="relative ml-2 mr-2">
-                    <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer z-50">
-                    <i class="fas fa-bell text-xl pointer-events-none"></i>
-                    <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
-                    </button>
+                    <!-- Contenedor Notificaciones -->
+                    <div id="nav-notifications-container" class="relative ml-2 mr-2">
+                        <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer z-50">
+                        <i class="fas fa-bell text-xl pointer-events-none"></i>
+                        <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
+                        </button>
 
-                    <!-- Dropdown -->
-                    <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
-                    <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center z-50 relative pointer-events-auto">
-                        <h3 class="font-bold text-sm">Notificaciones</h3>
-                        <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline font-semibold cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
+                        <!-- Dropdown -->
+                        <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
+                        <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center z-50 relative pointer-events-auto">
+                            <h3 class="font-bold text-sm">Notificaciones</h3>
+                            <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline font-semibold cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
+                        </div>
+                        <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
+                            <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
+                        </ul>
+                        </div>
                     </div>
-                    <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
-                        <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
-                    </ul>
-                    </div>
-                </div>
 
-                <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Salir</button>
-            `;
+                    <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Salir</button>
+                `;
 
-            // Inicializar Notificaciones
-            configurarNotificaciones();
+                // Inicializar Notificaciones
+                configurarNotificaciones(userStatusDiv);
 
-            // Agregamos el evento al nuevo botón de cerrar sesión
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await supabaseClient.auth.signOut();
-                window.location.reload(); // Recargamos la página al salir
-            });
-        }
+                // Agregamos el evento al nuevo botón de cerrar sesión
+                userStatusDiv.querySelector('#logout-btn').addEventListener('click', async () => {
+                    await supabaseClient.auth.signOut();
+                    window.location.reload(); // Recargamos la página al salir
+                });
+            }
+        });
     }
 }
 
@@ -137,43 +141,51 @@ async function cargarDatosParaBusqueda() {
   }
 }
 
-const searchInput = document.getElementById('search-input');
-const suggestionsContainer = document.getElementById('search-suggestions');
-const suggestionsList = document.getElementById('suggestions-list');
+const searchInputs = document.querySelectorAll('#search-input, #nav-search-input');
+const suggestionsContainers = document.querySelectorAll('#search-suggestions, #nav-search-suggestions');
+const suggestionsLists = document.querySelectorAll('#suggestions-list, #nav-suggestions-list');
 
-if (searchInput) {
-  // Actualizamos el placeholder para que el usuario sepa que puede buscar ambas cosas
-  searchInput.placeholder = "Busca un restaurante o un usuario...";
+searchInputs.forEach((searchInput, index) => {
+    const suggestionsContainer = suggestionsContainers[index];
+    const suggestionsList = suggestionsLists[index];
 
-  searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
+    if (searchInput) {
+      // Actualizamos el placeholder para que el usuario sepa que puede buscar ambas cosas
+      searchInput.placeholder = "Busca un restaurante o un usuario...";
 
-    // Si está vacío, ocultamos la lista
-    if (query === '') {
-      suggestionsContainer.classList.add('hidden');
-      return;
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+
+        // Si está vacío, ocultamos la lista
+        if (query === '') {
+          suggestionsContainer.classList.add('hidden');
+          return;
+        }
+
+        // Combinar ambas listas y filtrar
+        const todosLosDatos = [...restaurantesCacheados, ...perfilesCacheados];
+        const coincidencias = todosLosDatos.filter(item =>
+          item.nombre.toLowerCase().includes(query)
+        );
+
+        mostrarSugerencias(coincidencias, query, suggestionsList, suggestionsContainer, searchInput);
+      });
     }
-
-    // Combinar ambas listas y filtrar
-    const todosLosDatos = [...restaurantesCacheados, ...perfilesCacheados];
-    const coincidencias = todosLosDatos.filter(item =>
-      item.nombre.toLowerCase().includes(query)
-    );
-
-    mostrarSugerencias(coincidencias, query);
-  });
-}
+});
 
 // Ocultar sugerencias si hace click afuera
 document.addEventListener('click', (e) => {
-  if (searchInput && suggestionsContainer) {
-    if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-      suggestionsContainer.classList.add('hidden');
-    }
-  }
+    searchInputs.forEach((searchInput, index) => {
+        const suggestionsContainer = suggestionsContainers[index];
+        if (searchInput && suggestionsContainer) {
+            if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.classList.add('hidden');
+            }
+        }
+    });
 });
 
-function mostrarSugerencias(resultados, query) {
+function mostrarSugerencias(resultados, query, suggestionsList, suggestionsContainer, searchInput) {
   if (!suggestionsList || !suggestionsContainer) return;
 
   suggestionsList.innerHTML = ''; // Limpiar anteriores
@@ -368,9 +380,13 @@ function configurarVotos() {
             return;
         }
 
-        const contenedorResena = botonClickado.closest('div.flex.justify-end');
+        const contenedorResena = botonClickado.closest('div.flex.justify-end, .flex.items-center.gap-2');
+        if (!contenedorResena) return;
+
         const btnLike = contenedorResena.querySelector('.btn-like');
         const btnDislike = contenedorResena.querySelector('.btn-dislike');
+
+        if (!btnLike || !btnDislike) return;
 
         const autorId = btnLike.dataset.autorId; // Para la notificacion
 
@@ -486,12 +502,12 @@ function configurarVotos() {
 // 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
-async function configurarNotificaciones() {
-    const notifBtn = document.getElementById('nav-notifications-btn');
-    const notifDropdown = document.getElementById('nav-notifications-dropdown');
-    const notifBadge = document.getElementById('nav-notifications-badge');
-    const notifList = document.getElementById('nav-notifications-list');
-    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+async function configurarNotificaciones(navContext = document) {
+    const notifBtn = navContext.querySelector('#nav-notifications-btn');
+    const notifDropdown = navContext.querySelector('#nav-notifications-dropdown');
+    const notifBadge = navContext.querySelector('#nav-notifications-badge');
+    const notifList = navContext.querySelector('#nav-notifications-list');
+    const markAllReadBtn = navContext.querySelector('#mark-all-read-btn');
 
     if (!notifBtn || !currentUserId) return;
 

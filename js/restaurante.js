@@ -1,28 +1,11 @@
-// =========================================================================
-// 1. CONFIGURACIÓN SUPABASE
-// =========================================================================
-const SUPABASE_URL = 'https://xnndkqcuuejtznxhdiue.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubmRrcWN1dWVqdHpueGhkaXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2OTg2MjMsImV4cCI6MjA5MTI3NDYyM30.OrM0AqS0Q4KLmhYa8R9-wyMdDz7tlxU8h5ceacW37f8';
-
-// @ts-ignore
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 let currentRestauranteId = null;
 let allReviews = [];
-let currentUserId = null; // Guardar ID de sesión para los votos
+// currentUserId and supabaseClient are now global, provided by app.js
 
 // =========================================================================
 // 2. INICIALIZACIÓN DE LA PÁGINA
 // =========================================================================
-document.addEventListener('DOMContentLoaded', async () => {
-
-    // Configurar Auth y Nav
-    try {
-        await configurarNavegacionAutenticada();
-    } catch(err) {
-        console.error("Error configurando nav:", err);
-    }
-
+function initRestaurantePage() {
     // Obtener ID del restaurante de la URL (ej: restaurante.html?id=5)
     const urlParams = new URLSearchParams(window.location.search);
     currentRestauranteId = urlParams.get('id');
@@ -33,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Cargar datos del restaurante y reseñas
-    await cargarDetallesRestaurante();
+    cargarDetallesRestaurante();
 
     // Configurar botón "Escribir Reseña"
     const btnDejarResena = document.getElementById('btn-dejar-resena');
@@ -50,10 +33,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderizarResenas(e.target.value);
         });
     }
+}
 
-    // Cargar lista para la barra de búsqueda superior
-    cargarRestaurantesParaBusquedaNav();
-});
+// Escuchar el evento personalizado desde app.js o ejecutar directamente si ya está listo
+if (typeof navAuthReady !== 'undefined' && navAuthReady) {
+    initRestaurantePage();
+} else {
+    document.addEventListener('navAuthReady', initRestaurantePage);
+}
+
 
 // =========================================================================
 // 3. FUNCIONES DE CARGA Y RENDERIZADO
@@ -432,7 +420,7 @@ function renderizarResenas(sortMode) {
         container.appendChild(divResena);
     });
 
-    configurarVotos();
+    configurarVotos(); // This will now call the function from app.js
 }
 
 function mostrarError(msg = null) {
@@ -442,307 +430,5 @@ function mostrarError(msg = null) {
 
     if (msg) {
         document.getElementById('error-container').querySelector('p').textContent = msg;
-    }
-}
-
-// Lógica de interacción para los botones de Like/Dislike
-function configurarVotos() {
-    const btnLikes = document.querySelectorAll('.btn-like');
-    const btnDislikes = document.querySelectorAll('.btn-dislike');
-
-    const procesarVoto = async (resenaId, tipoVotoDeseado, botonClickado) => {
-        if (!currentUserId) {
-            alert("Debes iniciar sesión para votar.");
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const contenedorResena = botonClickado.closest('.flex.items-center.gap-2');
-        const btnLike = contenedorResena.querySelector('.btn-like');
-        const btnDislike = contenedorResena.querySelector('.btn-dislike');
-
-        const autorId = btnLike.dataset.autorId; // Para la notificacion
-
-        const spanLikeCount = btnLike.querySelector('.like-count');
-        const spanDislikeCount = btnDislike.querySelector('.dislike-count');
-
-        let isCurrentlyLiked = btnLike.classList.contains('text-green-600');
-        let isCurrentlyDisliked = btnDislike.classList.contains('text-red-600');
-
-        let currentLikeCount = parseInt(spanLikeCount.textContent);
-        let currentDislikeCount = parseInt(spanDislikeCount.textContent);
-
-        // Deshabilitar botones temporalmente
-        btnLike.disabled = true;
-        btnDislike.disabled = true;
-
-        try {
-            if (tipoVotoDeseado === 'like') {
-                if (isCurrentlyLiked) {
-                    // Quitar like
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
-
-                    // Borrar notificacion
-                    if(autorId && autorId !== currentUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
-                    }
-
-                    // UI Update
-                    btnLike.classList.remove('text-green-600', 'bg-green-50');
-                    btnLike.classList.add('text-gray-400');
-                    spanLikeCount.textContent = currentLikeCount - 1;
-                } else {
-                    // Poner like (Upsert para sobreescribir dislike si existe)
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'like' });
-
-                    // Crear notificacion si no es mia
-                    if (autorId && autorId !== currentUserId) {
-                        await supabaseClient.from('notificaciones').insert({
-                            usuario_id: autorId,
-                            actor_id: currentUserId,
-                            tipo: 'like',
-                            resena_id: resenaId
-                        });
-                    }
-
-                    // UI Update
-                    btnLike.classList.remove('text-gray-400');
-                    btnLike.classList.add('text-green-600', 'bg-green-50');
-                    spanLikeCount.textContent = currentLikeCount + 1;
-
-                    if (isCurrentlyDisliked) {
-                        btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                        btnDislike.classList.add('text-gray-400');
-                        spanDislikeCount.textContent = currentDislikeCount - 1;
-                    }
-                }
-            } else if (tipoVotoDeseado === 'dislike') {
-                if (isCurrentlyDisliked) {
-                    // Quitar dislike
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
-                    // UI Update
-                    btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                    btnDislike.classList.add('text-gray-400');
-                    spanDislikeCount.textContent = currentDislikeCount - 1;
-                } else {
-                    // Poner dislike (Upsert)
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
-
-                    // Si paso de Like a Dislike, borramos la notificacion de Like
-                    if (isCurrentlyLiked && autorId && autorId !== currentUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
-                    }
-
-                    // UI Update
-                    btnDislike.classList.remove('text-gray-400');
-                    btnDislike.classList.add('text-red-600', 'bg-red-50');
-                    spanDislikeCount.textContent = currentDislikeCount + 1;
-
-                    if (isCurrentlyLiked) {
-                        btnLike.classList.remove('text-green-600', 'bg-green-50');
-                        btnLike.classList.add('text-gray-400');
-                        spanLikeCount.textContent = currentLikeCount - 1;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error("Error al registrar voto:", err);
-            alert("No se pudo registrar tu voto.");
-        } finally {
-            btnLike.disabled = false;
-            btnDislike.disabled = false;
-        }
-    };
-
-    btnLikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // Evitar click en la tarjeta que lleva al restaurante
-            procesarVoto(btn.dataset.resenaId, 'like', btn);
-        });
-    });
-
-    btnDislikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // Evitar click en la tarjeta
-            procesarVoto(btn.dataset.resenaId, 'dislike', btn);
-        });
-    });
-}
-
-// =========================================================================
-// 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
-// =========================================================================
-
-async function configurarNotificaciones() {
-    const notifBtn = document.getElementById('nav-notifications-btn');
-    const notifDropdown = document.getElementById('nav-notifications-dropdown');
-    const notifBadge = document.getElementById('nav-notifications-badge');
-    const notifList = document.getElementById('nav-notifications-list');
-    const markAllReadBtn = document.getElementById('mark-all-read-btn');
-
-    if (!notifBtn || !currentUserId) return;
-
-    // 1. Cargar notificaciones al iniciar
-    await cargarYRenderizarNotificaciones();
-
-    // 2. Toggle del dropdown
-    notifBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        notifDropdown.classList.toggle('hidden');
-    });
-
-    // Cerrar si hace click afuera
-    document.addEventListener('click', (e) => {
-        if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
-            notifDropdown.classList.add('hidden');
-        }
-    });
-
-    // 3. Marcar todas como leídas
-    if(markAllReadBtn) {
-        // Remover listeners anteriores (útil si se llama multiples veces)
-        const newMarkBtn = markAllReadBtn.cloneNode(true);
-        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
-
-        newMarkBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            try {
-                await supabaseClient
-                    .from('notificaciones')
-                    .update({ leida: true })
-                    .eq('usuario_id', currentUserId)
-                    .eq('leida', false);
-
-                await cargarYRenderizarNotificaciones();
-                // Opcional: notifDropdown.classList.add('hidden');
-            } catch(err) {
-                console.error("Error marcando notificaciones leídas:", err);
-            }
-        });
-    }
-
-    async function cargarYRenderizarNotificaciones() {
-        try {
-            // Hacemos el fetch en dos pasos para evitar conflictos con los joins complejos
-            const { data: notificaciones, error } = await supabaseClient
-                .from('notificaciones')
-                .select('*')
-                .eq('usuario_id', currentUserId)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) throw error;
-
-            notifList.innerHTML = '';
-
-            const unreadCount = notificaciones.filter(n => !n.leida).length;
-
-            if (unreadCount > 0) {
-                notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                notifBadge.classList.remove('hidden');
-            } else {
-                notifBadge.classList.add('hidden');
-            }
-
-            if (notificaciones.length === 0) {
-                notifList.innerHTML = '<li class="px-4 py-4 text-center text-gray-500 text-sm">No tienes notificaciones</li>';
-                return;
-            }
-
-            // Cargar datos extra (actores y reseñas)
-            const actorIds = [...new Set(notificaciones.map(n => n.actor_id))];
-            const resenasIds = [...new Set(notificaciones.filter(n => n.resena_id).map(n => n.resena_id))];
-
-            let actoresMap = {};
-            let resenasMap = {};
-
-            if (actorIds.length > 0) {
-                const { data: actores } = await supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url').in('id', actorIds);
-                if (actores) actores.forEach(a => actoresMap[a.id] = a);
-            }
-
-            if (resenasIds.length > 0) {
-                const { data: resenasData } = await supabaseClient
-                    .from('resenas')
-                    .select('id, id_restaurante, restaurantes(nombre)')
-                    .in('id', resenasIds);
-
-                if (resenasData) resenasData.forEach(r => resenasMap[r.id] = r);
-            }
-
-            notificaciones.forEach(notif => {
-                const li = document.createElement('li');
-                const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
-                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
-
-                const actor = actoresMap[notif.actor_id];
-                const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
-                const actorImg = actor && actor.imagen_url ? actor.imagen_url : null;
-
-                let iconHtml = actorImg
-                    ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
-                    : `<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
-
-                let mensaje = '';
-                let urlDestino = '#';
-
-                if (notif.tipo === 'like') {
-                    const resenaInfo = resenasMap[notif.resena_id];
-                    const restNombre = resenaInfo && resenaInfo.restaurantes ? resenaInfo.restaurantes.nombre : 'un restaurante';
-                    const restId = resenaInfo ? resenaInfo.id_restaurante : null;
-
-                    mensaje = `<strong>${actorNombre}</strong> le dio me gusta a tu reseña en <strong>${restNombre}</strong>.`;
-
-                    if(restId) {
-                       urlDestino = `restaurante.html?id=${restId}`;
-                    }
-                } else if (notif.tipo === 'follow') {
-                    mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
-                    urlDestino = `perfil.html?id=${notif.actor_id}`;
-                }
-
-                // Parsear fecha
-                const fecha = new Date(notif.created_at);
-                const hoy = new Date();
-                let displayDate = '';
-                if (fecha.toDateString() === hoy.toDateString()) {
-                    displayDate = 'Hoy, ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                } else {
-                    displayDate = fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-                }
-
-                li.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="mt-1">${iconHtml}</div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-800 leading-snug">${mensaje}</p>
-                            <span class="text-[10px] text-gray-400 mt-1 block">${displayDate}</span>
-                        </div>
-                        ${!notif.leida ? '<div class="w-2 h-2 bg-[#c41200] rounded-full mt-2"></div>' : ''}
-                    </div>
-                `;
-
-                li.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    // Marcar como leída al tocar
-                    if (!notif.leida) {
-                        await supabaseClient.from('notificaciones').update({ leida: true }).eq('id', notif.id);
-                    }
-                    if (urlDestino !== '#') {
-                        window.location.href = urlDestino;
-                    }
-                });
-
-                notifList.appendChild(li);
-            });
-
-        } catch (err) {
-            console.error("Error obteniendo notificaciones:", err);
-            notifList.innerHTML = '<li class="px-4 py-4 text-center text-red-500 text-sm">Error al cargar</li>';
-        }
     }
 }

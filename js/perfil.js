@@ -1,1241 +1,391 @@
-// =========================================================================
-// 1. CONFIGURACIÓN SUPABASE
-// =========================================================================
-const SUPABASE_URL = 'https://xnndkqcuuejtznxhdiue.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubmRrcWN1dWVqdHpueGhkaXVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2OTg2MjMsImV4cCI6MjA5MTI3NDYyM30.OrM0AqS0Q4KLmhYa8R9-wyMdDz7tlxU8h5ceacW37f8';
-
-// @ts-ignore
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentSessionUserId = null; // Quien está logueado
-let profileUserId = null;        // De quien es el perfil que estamos viendo
-let currentBio = "";
-let currentImageUrl = "";
-let restaurantesList = [];
-let currentFavoritos = [];
-let isOwnProfile = true;
-
-// Variables para búsqueda mixta
-let navRestaurantesCacheados = [];
-let navPerfilesCacheados = [];
+// supabaseClient and currentUserId are now global, provided by app.js
+let viewedUserId = null;
+let allUserRestaurants = []; // Cache for favorite restaurants editing
 
 // =========================================================================
-// 2. LÓGICA DE PERFIL Y AUTENTICACIÓN
+// 2. INICIALIZACIÓN DE LA PÁGINA
 // =========================================================================
-document.addEventListener('DOMContentLoaded', async () => {
-
-  // Verificamos si hay una sesión activa
-  const { data: { session }, error } = await supabaseClient.auth.getSession();
-
-  if (session && session.user) {
-    currentSessionUserId = session.user.id;
-  }
-
-  // Verificamos de quién es el perfil que queremos ver a través de la URL (ej: perfil.html?id=xxx)
-  const urlParams = new URLSearchParams(window.location.search);
-  const targetId = urlParams.get('id');
-
-  if (targetId) {
-      profileUserId = targetId;
-      isOwnProfile = (currentSessionUserId === profileUserId);
-  } else {
-      // Si no hay ID en la URL, asumimos que quiere ver su propio perfil
-      if (!currentSessionUserId) {
-          // Si no está logueado y no busca un perfil, lo mandamos al login
-          window.location.href = 'login.html';
-          return;
-      }
-      profileUserId = currentSessionUserId;
-      isOwnProfile = true;
-  }
-
-  // Cargar lista de todos los restaurantes para los selects
-  await cargarListaRestaurantes();
-
-  // Buscamos información del perfil que estamos visualizando
-  const { data: perfilData, error: perfilError } = await supabaseClient
-    .from('perfiles')
-    .select('nombre_usuario, biografia, imagen_url, restaurantes_favoritos')
-    .eq('id', profileUserId)
-    .single();
-
-  let userDisplayName = session && session.user ? session.user.email : '';
-  let profileNameDisplay = "Usuario de TrackEat";
-
-  // Actualizar el nav con la info del usuario logueado
-  const userStatusDiv = document.getElementById('user-status');
-  if (currentSessionUserId) {
-      const { data: miPerfilData } = await supabaseClient
-        .from('perfiles')
-        .select('nombre_usuario')
-        .eq('id', currentSessionUserId)
-        .single();
-
-      if (miPerfilData && miPerfilData.nombre_usuario) {
-          userDisplayName = miPerfilData.nombre_usuario;
-      }
-
-      userStatusDiv.innerHTML = `
-            <span class="text-sm text-white font-medium">Hola, ${userDisplayName}</span>
-
-            <!-- Contenedor Notificaciones -->
-            <div id="nav-notifications-container" class="relative ml-2 mr-2">
-              <button id="nav-notifications-btn" class="text-white hover:text-red-200 transition focus:outline-none relative mt-1 cursor-pointer">
-                <i class="fas fa-bell text-xl pointer-events-none"></i>
-                <span id="nav-notifications-badge" class="absolute -top-1 -right-2 bg-red-600 border border-[#c41200] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden pointer-events-none">0</span>
-              </button>
-
-              <!-- Dropdown -->
-              <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-[100] border border-gray-100 text-gray-800">
-                <div class="bg-gray-50 border-b border-gray-100 px-4 py-2 flex justify-between items-center relative">
-                  <h3 class="font-bold text-sm">Notificaciones</h3>
-                  <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline cursor-pointer z-50 pointer-events-auto">Marcar leídas</button>
-                </div>
-                <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
-                  <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
-                </ul>
-              </div>
-            </div>
-
-            <button id="logout-btn" class="text-sm bg-red-800 text-white px-3 py-1 rounded font-bold hover:bg-red-900 transition ml-2">Cerrar sesión</button>
-        `;
-
-      configurarNotificaciones();
-
-      document.getElementById('logout-btn').addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'index.html';
-      });
-  } else {
-       // Si no está logueado, los botones de iniciar sesión / registrarse ya están en el HTML
-       userStatusDiv.classList.remove('hidden');
-  }
-
-  // Llenar la info visual del perfil
-  if (perfilData) {
-    if (perfilData.nombre_usuario) {
-      profileNameDisplay = perfilData.nombre_usuario;
-    }
-
-    if (perfilData.biografia && perfilData.biografia.trim() !== '') {
-      currentBio = perfilData.biografia;
-      mostrarBiografia(currentBio);
-    }
-
-    if (perfilData.imagen_url && perfilData.imagen_url.trim() !== '') {
-      currentImageUrl = perfilData.imagen_url;
-      mostrarImagenPerfil(currentImageUrl);
-    }
-
-    if (perfilData.restaurantes_favoritos) {
-      currentFavoritos = Array.isArray(perfilData.restaurantes_favoritos) ? perfilData.restaurantes_favoritos : [];
-    }
-  } else {
-      // Si llegamos acá es porque buscaron un perfil que no existe
-      document.getElementById('profile-name').textContent = "Perfil no encontrado";
-      document.getElementById('profile-email').textContent = "";
-      return;
-  }
-
-  document.getElementById('profile-name').textContent = profileNameDisplay;
-
-  // Ocultamos el email si no es nuestro perfil por privacidad
-  if (isOwnProfile && session) {
-      document.getElementById('profile-email').innerHTML = `<i class="fas fa-envelope mr-2"></i>${session.user.email}`;
-  } else {
-      document.getElementById('profile-email').innerHTML = ''; // Limpiamos el texto '...'
-  }
-
-  // Ocultar botones de edición si no es tu perfil
-  const editProfileBtn = document.getElementById('edit-profile-btn');
-  const editFavsBtn = document.getElementById('edit-favs-btn');
-
-  if (isOwnProfile) {
-      editProfileBtn.classList.remove('hidden');
-      configurarEdicionPerfil();
-      configurarEdicionFavoritos();
-  } else if (currentSessionUserId) {
-      // Si NO es nuestro perfil y estamos logueados, mostramos el botón seguir
-      const followBtn = document.getElementById('follow-btn');
-      if(followBtn) followBtn.classList.remove('hidden');
-      // La configuración del botón seguir se llama DESPUÉS de cargar seguidores
-  }
-
-  // Cargar seguidores y seguidos (esto actualizará el DOM de contadores e isFollowingUser)
-  await cargarSeguidores();
-
-  // AHORA sí configuramos el botón para que use isFollowingUser correcto
-  if (!isOwnProfile && currentSessionUserId) {
-      configurarBotonSeguir();
-  }
-
-  configurarModalesFollows();
-  cargarHistorialResenas();
-  renderizarFavoritos();
-
-  // Cargar datos mixtos para la barra de navegación y configurarla
-  await cargarDatosParaBusquedaNav();
-  configurarBarraDeBusquedaMixtaNav();
-});
-
-// =========================================================================
-// 3. FUNCIONES DE UI
-// =========================================================================
-
-function mostrarBiografia(texto) {
-  const bioContainer = document.getElementById('bio-container');
-  const bioText = document.getElementById('profile-bio');
-
-  if (texto && texto.trim() !== '') {
-    bioText.innerHTML = `"${texto.replace(/\\n/g, '<br>')}"`;
-    bioContainer.classList.remove('hidden');
-  } else {
-    bioContainer.classList.add('hidden');
-  }
-}
-
-function mostrarImagenPerfil(url) {
-  const icon = document.getElementById('profile-icon');
-  const img = document.getElementById('profile-image');
-
-  if (url && url.trim() !== '') {
-    img.src = url;
-    img.classList.remove('hidden');
-    icon.classList.add('hidden');
-  } else {
-    img.classList.add('hidden');
-    icon.classList.remove('hidden');
-  }
-}
-
-function configurarEdicionPerfil() {
-  const btnEditProfile = document.getElementById('edit-profile-btn');
-  const bioContainer = document.getElementById('bio-container');
-  const bioEditContainer = document.getElementById('bio-edit-container');
-
-  const inputImageUrl = document.getElementById('image-url-input');
-  const textareaBio = document.getElementById('bio-edit-textarea');
-
-  const btnSave = document.getElementById('save-bio-btn');
-  const btnCancel = document.getElementById('cancel-bio-btn');
-
-  btnEditProfile.addEventListener('click', () => {
-    bioContainer.classList.add('hidden');
-    bioEditContainer.classList.remove('hidden');
-    textareaBio.value = currentBio;
-    inputImageUrl.value = currentImageUrl;
-    inputImageUrl.focus();
-  });
-
-  btnCancel.addEventListener('click', () => {
-    bioEditContainer.classList.add('hidden');
-    mostrarBiografia(currentBio);
-  });
-
-  btnSave.addEventListener('click', async () => {
-    const nuevaBio = textareaBio.value.trim();
-    const nuevaImgUrl = inputImageUrl.value.trim();
-
-    btnSave.disabled = true;
-    btnSave.textContent = '...';
-
-    try {
-      const { error } = await supabaseClient
-        .from('perfiles')
-        .update({
-          biografia: nuevaBio,
-          imagen_url: nuevaImgUrl
-        })
-        .eq('id', profileUserId);
-
-      if (error) throw error;
-
-      currentBio = nuevaBio;
-      currentImageUrl = nuevaImgUrl;
-
-      bioEditContainer.classList.add('hidden');
-      mostrarBiografia(currentBio);
-      mostrarImagenPerfil(currentImageUrl);
-
-    } catch (err) {
-      console.error('Error al actualizar el perfil:', err);
-      alert("Ocurrió un error al guardar tu perfil. Por favor intenta de nuevo.");
-    } finally {
-      btnSave.disabled = false;
-      btnSave.textContent = 'Guardar';
-    }
-  });
-}
-
-// =========================================================================
-// 4. LÓGICA DE INSIGNIAS Y CARGA DE RESEÑAS
-// =========================================================================
-
-function calcularInsignia(cantidadResenas) {
-  let nombre = "Nuevo Crítico";
-  let colorClass = "bg-green-100 text-green-800 border-green-200"; // Verde (Nivel 1)
-  let icono = "fa-seedling";
-
-  if (cantidadResenas >= 6 && cantidadResenas <= 15) {
-    nombre = "Explorador Gastronómico";
-    colorClass = "bg-blue-100 text-blue-800 border-blue-200"; // Azul (Nivel 2)
-    icono = "fa-compass";
-  } else if (cantidadResenas >= 16 && cantidadResenas <= 35) {
-    nombre = "Crítico Intermedio";
-    colorClass = "bg-yellow-100 text-yellow-800 border-yellow-200"; // Amarillo (Nivel 3)
-    icono = "fa-star";
-  } else if (cantidadResenas >= 36 && cantidadResenas <= 75) {
-    nombre = "Crítico Experimentado";
-    colorClass = "bg-orange-100 text-orange-800 border-orange-200"; // Naranja (Nivel 4)
-    icono = "fa-fire";
-  } else if (cantidadResenas >= 76 && cantidadResenas < 150) {
-    nombre = "Experto Gastronómico";
-    colorClass = "bg-red-100 text-red-800 border-red-200"; // Rojo (Nivel 5)
-    icono = "fa-award";
-  } else if (cantidadResenas >= 150) {
-    nombre = "Referente TrackEat";
-    colorClass = "bg-purple-100 text-purple-800 border-purple-200"; // Morado (Nivel 6)
-    icono = "fa-crown";
-  }
-
-  return { nombre, colorClass, icono };
-}
-
-async function cargarHistorialResenas() {
-  const container = document.getElementById('mis-resenas');
-  const vacioMsg = document.getElementById('mis-resenas-vacio');
-  const statsResenas = document.getElementById('stats-resenas');
-
-  try {
-    const { data: resenas, error } = await supabaseClient
-      .from('resenas')
-      .select(`
-                  id,
-                  created_at,
-                  comentario,
-                  puntuacion_general,
-                  calidad_comida,
-                  atencion,
-                  precio,
-                  ambiente,
-                  id_restaurante
-              `)
-      .eq('id_usuario', profileUserId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    const totalResenas = resenas ? resenas.length : 0;
-
-    statsResenas.textContent = totalResenas;
-
-    const badgeContainer = document.getElementById('user-badge-container');
-    const badgeSpan = document.getElementById('user-badge');
-    const insignia = calcularInsignia(totalResenas);
-
-    badgeSpan.className = `text-xs px-3 py-1 rounded-full font-semibold border shadow-sm ${insignia.colorClass}`;
-    badgeSpan.innerHTML = `<i class="fas ${insignia.icono} mr-1"></i> ${insignia.nombre}`;
-    badgeContainer.classList.remove('hidden');
-
-    if (totalResenas > 0) {
-      if (vacioMsg) vacioMsg.remove();
-      container.innerHTML = '';
-
-      // Cargar votos
-      const resenasIds = resenas.map(r => r.id);
-      let votosData = [];
-      if (resenasIds.length > 0) {
-          const { data: votos } = await supabaseClient
-              .from('resenas_votos')
-              .select('resena_id, usuario_id, tipo')
-              .in('resena_id', resenasIds);
-          votosData = votos || [];
-      }
-
-      for (const resena of resenas) {
-        const fechaObj = new Date(resena.created_at);
-        const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
-          day: 'numeric', month: 'long', year: 'numeric'
-        });
-
-        let nombreRestaurante = 'Restaurante Desconocido';
-        if (resena.id_restaurante) {
-          const { data: restData, error: restError } = await supabaseClient
-            .from('restaurantes')
-            .select('nombre')
-            .eq('id', resena.id_restaurante)
-            .single();
-          if (restData) {
-            nombreRestaurante = restData.nombre;
-          }
-        }
-
-        const misVotos = votosData.filter(v => v.resena_id === resena.id);
-        const likesCount = misVotos.filter(v => v.tipo === 'like').length;
-        const dislikesCount = misVotos.filter(v => v.tipo === 'dislike').length;
-
-        let userVoto = null;
-        if (currentSessionUserId) {
-            userVoto = misVotos.find(v => v.usuario_id === currentSessionUserId)?.tipo;
-        }
-
-        const likeClass = userVoto === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50';
-        const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
-
-        const divResena = document.createElement('div');
-        divResena.className = "border border-gray-100 rounded-lg p-4 hover:shadow-md transition mb-4 bg-white relative";
-
-        // El contenedor entero ya no redirige si hacemos clic en editar
-        divResena.innerHTML = `
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <h3 class="font-bold text-lg text-[#c41200] hover:underline cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">${nombreRestaurante}</h3>
-                <p class="text-xs text-gray-400">Escrita el ${fechaFormateada}</p>
-              </div>
-              ${isOwnProfile ? `<button class="text-gray-400 hover:text-[#c41200] text-sm font-semibold transition bg-gray-100 hover:bg-red-50 px-3 py-1 rounded" onclick="abrirEdicionResena(${resena.id}, '${resena.comentario || ''}', ${resena.puntuacion_general || 0})"><i class="fas fa-edit"></i> Editar</button>` : ''}
-            </div>
-
-            <!-- Mostrar Reseña Normal -->
-            <div id="resena-display-${resena.id}">
-                <div class="mb-3 flex items-center gap-2 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
-                  <span class="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">General: ${resena.puntuacion_general ? Number(resena.puntuacion_general).toFixed(1) : 'N/A'} ★</span>
-                </div>
-
-                <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mb-3 bg-gray-50 p-2 rounded cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">
-                   <span><strong>Comida:</strong> ${resena.calidad_comida} ★</span>
-                   <span><strong>Atención:</strong> ${resena.atencion} ★</span>
-                   <span><strong>Precio:</strong> ${resena.precio} ★</span>
-                   ${resena.ambiente ? `<span><strong>Ambiente:</strong> ${resena.ambiente} ★</span>` : ''}
-                </div>
-
-                <p class="text-gray-700 text-sm mb-3 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante}'">${resena.comentario}</p>
-            </div>
-
-            <!-- Formulario de Edición (Oculto) -->
-            <div id="resena-edit-${resena.id}" class="hidden mb-3">
-                <textarea id="edit-comentario-${resena.id}" class="w-full border p-2 rounded text-sm mb-2 focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" rows="3"></textarea>
-                <div class="flex gap-2 justify-end">
-                    <button class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-xs font-semibold hover:bg-gray-400" onclick="cerrarEdicionResena(${resena.id})">Cancelar</button>
-                    <button class="bg-[#c41200] text-white px-3 py-1 rounded text-xs font-semibold hover:bg-[#a00e00]" onclick="guardarEdicionResena(${resena.id})">Guardar</button>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
-                <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${profileUserId}">
-                    <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
-                </button>
-                <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
-                    <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
-                </button>
-            </div>
-        `;
-
-        container.appendChild(divResena);
-      }
-
-      configurarVotosEnPerfil();
-
+function initProfilePage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idFromUrl = urlParams.get('id');
+
+    if (idFromUrl) {
+        viewedUserId = idFromUrl;
+    } else if (currentUserId) {
+        viewedUserId = currentUserId;
     } else {
-        if (vacioMsg) {
-            vacioMsg.textContent = isOwnProfile ? "Aún no has publicado reseñas." : "Este usuario aún no ha publicado reseñas.";
-        }
-    }
-  } catch (err) {
-    console.error("Error al cargar historial de reseñas:", err);
-    if (vacioMsg) vacioMsg.textContent = "Hubo un error al cargar las reseñas.";
-  }
-}
-
-// Funciones globales para manejar la edición de la reseña
-window.abrirEdicionResena = function(id, comentarioActual, puntuacionGeneral) {
-    document.getElementById(`resena-display-${id}`).classList.add('hidden');
-    const editContainer = document.getElementById(`resena-edit-${id}`);
-    editContainer.classList.remove('hidden');
-
-    // Rellenamos el textarea con el comentario actual
-    const textarea = document.getElementById(`edit-comentario-${id}`);
-    textarea.value = comentarioActual;
-    textarea.focus();
-}
-
-window.cerrarEdicionResena = function(id) {
-    document.getElementById(`resena-edit-${id}`).classList.add('hidden');
-    document.getElementById(`resena-display-${id}`).classList.remove('hidden');
-}
-
-window.guardarEdicionResena = async function(id) {
-    const nuevoComentario = document.getElementById(`edit-comentario-${id}`).value.trim();
-
-    if(!nuevoComentario) {
-        alert("El comentario no puede estar vacío.");
+        // Si no hay ID en la URL y no hay sesión, redirigir a login
+        window.location.href = 'login.html';
         return;
     }
 
+    // Cargar todos los datos del perfil
+    loadProfileData();
+
+    // Configurar listeners de los botones de edición y modales
+    setupEventListeners();
+}
+
+// Escuchar el evento personalizado desde app.js o ejecutar directamente si ya está listo
+if (typeof navAuthReady !== 'undefined' && navAuthReady) {
+    initProfilePage();
+} else {
+    document.addEventListener('navAuthReady', initProfilePage);
+}
+
+// =========================================================================
+// 3. CARGA DE DATOS DEL PERFIL
+// =========================================================================
+async function loadProfileData() {
     try {
-        const { error } = await supabaseClient
-            .from('resenas')
-            .update({ comentario: nuevoComentario })
-            .eq('id', id)
-            .eq('id_usuario', currentSessionUserId); // Seguridad extra
+        // Cargar perfil, reseñas, seguidores y seguidos en paralelo
+        const [profileRes, reviewsRes, followersRes, followingRes] = await Promise.all([
+            supabaseClient.from('perfiles').select('*').eq('id', viewedUserId).single(),
+            supabaseClient.from('resenas').select('*, restaurantes(nombre, id)').eq('id_usuario', viewedUserId).order('created_at', { ascending: false }),
+            supabaseClient.from('seguidores').select('seguidor_id', { count: 'exact' }).eq('seguido_id', viewedUserId),
+            supabaseClient.from('seguidores').select('seguido_id', { count: 'exact' }).eq('seguidor_id', viewedUserId)
+        ]);
 
-        if (error) throw error;
+        // --- Renderizar Información del Perfil ---
+        if (profileRes.error) throw profileRes.error;
+        const profile = profileRes.data;
+        renderProfileHeader(profile, followersRes.count, followingRes.count);
 
-        // Recargar la página o volver a cargar las reseñas
-        cargarHistorialResenas();
+        // --- Renderizar Reseñas ---
+        if (reviewsRes.error) throw reviewsRes.error;
+        renderUserReviews(reviewsRes.data);
+        document.getElementById('stats-resenas').textContent = reviewsRes.data.length;
 
-    } catch (err) {
-        console.error("Error al editar reseña:", err);
-        alert("Hubo un error al guardar los cambios.");
+        // --- Lógica de Botones (Seguir/Editar) ---
+        setupActionButtons(followersRes.data);
+
+        // --- Cargar Restaurantes Favoritos ---
+        await loadFavoriteRestaurants(profile.restaurantes_favoritos);
+
+    } catch (error) {
+        console.error('Error al cargar el perfil:', error);
+        document.querySelector('main').innerHTML = '<p class="text-center text-red-500">Error al cargar el perfil. Es posible que el usuario no exista.</p>';
     }
-}
-
-
-function configurarVotosEnPerfil() {
-    const btnLikes = document.querySelectorAll('.btn-like');
-    const btnDislikes = document.querySelectorAll('.btn-dislike');
-
-    const procesarVoto = async (resenaId, tipoVotoDeseado, botonClickado) => {
-        if (!currentSessionUserId) {
-            alert("Debes iniciar sesión para votar.");
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const contenedorResena = botonClickado.closest('.flex.justify-end');
-        const btnLike = contenedorResena.querySelector('.btn-like');
-        const btnDislike = contenedorResena.querySelector('.btn-dislike');
-
-        const autorId = btnLike.dataset.autorId; // Para la notificacion
-
-        const spanLikeCount = btnLike.querySelector('.like-count');
-        const spanDislikeCount = btnDislike.querySelector('.dislike-count');
-
-        let isCurrentlyLiked = btnLike.classList.contains('text-green-600');
-        let isCurrentlyDisliked = btnDislike.classList.contains('text-red-600');
-
-        let currentLikeCount = parseInt(spanLikeCount.textContent);
-        let currentDislikeCount = parseInt(spanDislikeCount.textContent);
-
-        btnLike.disabled = true;
-        btnDislike.disabled = true;
-
-        try {
-            if (tipoVotoDeseado === 'like') {
-                if (isCurrentlyLiked) {
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentSessionUserId });
-
-                    if(autorId && autorId !== currentSessionUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentSessionUserId, resena_id: resenaId });
-                    }
-
-                    btnLike.classList.remove('text-green-600', 'bg-green-50');
-                    btnLike.classList.add('text-gray-400');
-                    spanLikeCount.textContent = currentLikeCount - 1;
-                } else {
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentSessionUserId, tipo: 'like' });
-
-                    if (autorId && autorId !== currentSessionUserId) {
-                        await supabaseClient.from('notificaciones').insert({
-                            usuario_id: autorId,
-                            actor_id: currentSessionUserId,
-                            tipo: 'like',
-                            resena_id: resenaId
-                        });
-                    }
-
-                    btnLike.classList.remove('text-gray-400');
-                    btnLike.classList.add('text-green-600', 'bg-green-50');
-                    spanLikeCount.textContent = currentLikeCount + 1;
-
-                    if (isCurrentlyDisliked) {
-                        btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                        btnDislike.classList.add('text-gray-400');
-                        spanDislikeCount.textContent = currentDislikeCount - 1;
-                    }
-                }
-            } else if (tipoVotoDeseado === 'dislike') {
-                if (isCurrentlyDisliked) {
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentSessionUserId });
-                    btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                    btnDislike.classList.add('text-gray-400');
-                    spanDislikeCount.textContent = currentDislikeCount - 1;
-                } else {
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentSessionUserId, tipo: 'dislike' });
-
-                    if (isCurrentlyLiked && autorId && autorId !== currentSessionUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentSessionUserId, resena_id: resenaId });
-                    }
-
-                    btnDislike.classList.remove('text-gray-400');
-                    btnDislike.classList.add('text-red-600', 'bg-red-50');
-                    spanDislikeCount.textContent = currentDislikeCount + 1;
-
-                    if (isCurrentlyLiked) {
-                        btnLike.classList.remove('text-green-600', 'bg-green-50');
-                        btnLike.classList.add('text-gray-400');
-                        spanLikeCount.textContent = currentLikeCount - 1;
-                    }
-                }
-            }
-        } catch (err) {
-            console.error("Error al registrar voto:", err);
-            alert("No se pudo registrar tu voto.");
-        } finally {
-            btnLike.disabled = false;
-            btnDislike.disabled = false;
-        }
-    };
-
-    btnLikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            procesarVoto(btn.dataset.resenaId, 'like', btn);
-        });
-    });
-
-    btnDislikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            procesarVoto(btn.dataset.resenaId, 'dislike', btn);
-        });
-    });
 }
 
 // =========================================================================
-// 5. LÓGICA DE FAVORITOS MANUALES
+// 4. RENDERIZADO DE COMPONENTES
 // =========================================================================
+function renderProfileHeader(profile, followersCount, followingCount) {
+    document.getElementById('profile-name').textContent = profile.nombre_usuario || 'Usuario';
+    document.getElementById('profile-email').textContent = profile.email;
+    document.querySelector('#profile-email + p').textContent = `Miembro desde: ${new Date(profile.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}`;
 
-async function cargarListaRestaurantes() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('restaurantes')
-      .select('id, nombre')
-      .order('nombre', { ascending: true });
-    if (error) throw error;
-    if (data) restaurantesList = data;
-  } catch (err) {
-    console.error("Error al cargar lista de restaurantes:", err);
-  }
-}
-
-function getNombreRestaurante(id) {
-  // Parsear a numero o string dependiendo de como esté guardado
-  const rest = restaurantesList.find(r => String(r.id) === String(id));
-  return rest ? rest.nombre : 'Desconocido';
-}
-
-function renderizarFavoritos() {
-  const container = document.getElementById('mis-restaurantes-favoritos');
-  const editBtn = document.getElementById('edit-favs-btn');
-
-  if (isOwnProfile) {
-      editBtn.classList.remove('hidden'); // Mostrar botón de editar si es su perfil
-  }
-
-  if (currentFavoritos.length === 0) {
-    container.innerHTML = `<li class="text-gray-500 text-sm">${isOwnProfile ? 'No has elegido ningún favorito aún.' : 'Este usuario no tiene favoritos.'}</li>`;
-    return;
-  }
-
-  container.innerHTML = '';
-  currentFavoritos.forEach(id => {
-    const li = document.createElement('li');
-    li.className = "flex items-center text-sm font-medium text-gray-700 cursor-pointer hover:underline hover:text-[#c41200]";
-    li.onclick = () => { window.location.href = `restaurante.html?id=${id}`; };
-    li.innerHTML = `<i class="fas fa-heart text-[#c41200] text-xs mr-2"></i> ${getNombreRestaurante(id)}`;
-    container.appendChild(li);
-  });
-}
-
-function configurarEdicionFavoritos() {
-  const editBtn = document.getElementById('edit-favs-btn');
-  const listContainer = document.getElementById('mis-restaurantes-favoritos');
-  const editContainer = document.getElementById('favs-edit-container');
-  const selectContainer = document.getElementById('favs-select-container');
-  const btnSave = document.getElementById('save-favs-btn');
-  const btnCancel = document.getElementById('cancel-favs-btn');
-
-  editBtn.addEventListener('click', () => {
-    listContainer.classList.add('hidden');
-    editBtn.classList.add('hidden');
-    editContainer.classList.remove('hidden');
-
-    // Crear 5 selects
-    selectContainer.innerHTML = '';
-    for (let i = 0; i < 5; i++) {
-      const select = document.createElement('select');
-      select.className = "w-full border p-1 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200] fav-select";
-      select.innerHTML = '<option value="">(Ninguno)</option>';
-
-      restaurantesList.forEach(rest => {
-        const option = document.createElement('option');
-        option.value = rest.id;
-        option.textContent = rest.nombre;
-        if (currentFavoritos[i] && String(currentFavoritos[i]) === String(rest.id)) {
-          option.selected = true;
-        }
-        select.appendChild(option);
-      });
-
-      selectContainer.appendChild(select);
-    }
-  });
-
-  btnCancel.addEventListener('click', () => {
-    editContainer.classList.add('hidden');
-    listContainer.classList.remove('hidden');
-    editBtn.classList.remove('hidden');
-  });
-
-  btnSave.addEventListener('click', async () => {
-    const selects = document.querySelectorAll('.fav-select');
-    const nuevosFavoritos = [];
-
-    selects.forEach(select => {
-      if (select.value) {
-        // Castear a numero si tu ID es numerico, sino dejarlo como string
-        // Aquí lo pasamos como entero por si Supabase lo requiere así en tu base
-        const val = isNaN(Number(select.value)) ? select.value : Number(select.value);
-        nuevosFavoritos.push(val);
-      }
-    });
-
-    // Filtrar duplicados por si eligieron el mismo dos veces
-    const favoritosUnicos = [...new Set(nuevosFavoritos)];
-
-    btnSave.disabled = true;
-    btnSave.textContent = '...';
-
-    try {
-      const { error } = await supabaseClient
-        .from('perfiles')
-        .update({ restaurantes_favoritos: favoritosUnicos })
-        .eq('id', profileUserId);
-
-      if (error) throw error;
-
-      currentFavoritos = favoritosUnicos;
-      editContainer.classList.add('hidden');
-      listContainer.classList.remove('hidden');
-
-      renderizarFavoritos();
-
-    } catch (err) {
-      console.error('Error al actualizar favoritos:', err);
-      alert("Ocurrió un error al guardar tus favoritos.");
-    } finally {
-      btnSave.disabled = false;
-      btnSave.textContent = 'Guardar';
-      editBtn.classList.remove('hidden');
-    }
-  });
-}
-
-// =========================================================================
-// 6. LÓGICA DE BARRA DE BÚSQUEDA (MIXTA)
-// =========================================================================
-
-async function cargarDatosParaBusquedaNav() {
-  try {
-    // Restaurantes (ya estaban cargados, pero por si acaso remapeamos)
-    if (restaurantesList.length > 0) {
-        navRestaurantesCacheados = restaurantesList.map(r => ({ ...r, tipo: 'restaurante' }));
+    // Biografía
+    const bioContainer = document.getElementById('bio-container');
+    const profileBio = document.getElementById('profile-bio');
+    if (profile.biografia) {
+        profileBio.textContent = profile.biografia;
+        bioContainer.classList.remove('hidden');
     }
 
-    // Usuarios
-    const { data: perfiles, error: errorPerf } = await supabaseClient
-      .from('perfiles')
-      .select('id, nombre_usuario, imagen_url');
-
-    if (!errorPerf && perfiles) {
-      navPerfilesCacheados = perfiles
-          .filter(p => p.nombre_usuario)
-          .map(p => ({
-              id: p.id,
-              nombre: p.nombre_usuario,
-              imagen_url: p.imagen_url,
-              tipo: 'usuario'
-          }));
-    }
-  } catch (err) {
-    console.error("Error al cargar datos mixtos para búsqueda nav:", err);
-  }
-}
-
-function configurarBarraDeBusquedaMixtaNav() {
-  const searchInput = document.getElementById('nav-search-input');
-  const suggestionsContainer = document.getElementById('nav-search-suggestions');
-  const suggestionsList = document.getElementById('nav-suggestions-list');
-
-  if (!searchInput) return;
-
-  searchInput.placeholder = "Busca un restaurante o un usuario...";
-
-  searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase().trim();
-
-    if (query === '') {
-      suggestionsContainer.classList.add('hidden');
-      return;
-    }
-
-    const todosLosDatos = [...navRestaurantesCacheados, ...navPerfilesCacheados];
-    const coincidencias = todosLosDatos.filter(item =>
-      item.nombre.toLowerCase().includes(query)
-    );
-
-    mostrarSugerenciasBusquedaMixta(coincidencias, query, suggestionsList, suggestionsContainer, searchInput);
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-      suggestionsContainer.classList.add('hidden');
-    }
-  });
-}
-
-function mostrarSugerenciasBusquedaMixta(resultados, query, listElement, containerElement, inputElement) {
-  listElement.innerHTML = '';
-
-  if (resultados.length === 0) {
-    const li = document.createElement('li');
-    li.className = 'px-4 py-3 text-gray-500 text-sm text-center';
-    li.textContent = 'No se encontraron resultados';
-    listElement.appendChild(li);
-  } else {
-    const topResultados = resultados.slice(0, 6);
-
-    topResultados.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center justify-between text-sm';
-
-      const regex = new RegExp(`(${query})`, "gi");
-      const nombreResaltado = item.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
-
-      let leftContent = '';
-      if (item.tipo === 'restaurante') {
-          leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
-      } else {
-          if (item.imagen_url) {
-              leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-gray-200"> ${nombreResaltado}</div>`;
-          } else {
-              leftContent = `<div class="flex items-center"><i class="fas fa-user text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
-          }
-      }
-
-      const rightBadge = item.tipo === 'restaurante'
-          ? `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase tracking-wider">Lugar</span>`
-          : `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded uppercase tracking-wider">Usuario</span>`;
-
-      li.innerHTML = `${leftContent} ${rightBadge}`;
-
-      li.addEventListener('click', () => {
-        inputElement.value = item.nombre;
-        containerElement.classList.add('hidden');
-
-        if (item.tipo === 'restaurante') {
-            window.location.href = `restaurante.html?id=${item.id}`;
-        } else {
-            window.location.href = `perfil.html?id=${item.id}`;
-        }
-      });
-
-      listElement.appendChild(li);
-    });
-  }
-
-  containerElement.classList.remove('hidden');
-}
-
-// =========================================================================
-// 7. LÓGICA DE SEGUIDORES (FOLLOWS)
-// =========================================================================
-
-let isFollowingUser = false;
-let seguidoresData = [];
-let seguidosData = [];
-
-async function cargarSeguidores() {
-    try {
-        // Traer a quienes siguen al usuario actual (Seguidores)
-        const { data: followers, error: errFollowers } = await supabaseClient
-            .from('follows')
-            .select('follower_id')
-            .eq('following_id', profileUserId);
-
-        if (errFollowers) throw errFollowers;
-
-        // Comprobar si YO sigo a este usuario (por si ya está en la BD)
-        if (currentSessionUserId && !isOwnProfile) {
-            // Buscamos si currentSessionUserId (mi ID) está entre los follower_id
-            isFollowingUser = followers.some(f => f.follower_id === currentSessionUserId);
-        }
-
-        const followerIds = followers.map(f => f.follower_id);
-        if (followerIds.length > 0) {
-            const { data: pFollowers } = await supabaseClient
-                .from('perfiles')
-                .select('id, nombre_usuario, imagen_url')
-                .in('id', followerIds);
-            seguidoresData = pFollowers || [];
-        } else {
-            seguidoresData = [];
-        }
-        document.getElementById('stats-seguidores').textContent = seguidoresData.length;
-
-        // Traer a quienes sigue el usuario actual (Seguidos)
-        const { data: following, error: errFollowing } = await supabaseClient
-            .from('follows')
-            .select('following_id')
-            .eq('follower_id', profileUserId);
-
-        if (errFollowing) throw errFollowing;
-
-        const followingIds = following.map(f => f.following_id);
-        if (followingIds.length > 0) {
-            const { data: pFollowing } = await supabaseClient
-                .from('perfiles')
-                .select('id, nombre_usuario, imagen_url')
-                .in('id', followingIds);
-            seguidosData = pFollowing || [];
-        } else {
-            seguidosData = [];
-        }
-        document.getElementById('stats-seguidos').textContent = seguidosData.length;
-
-    } catch(err) {
-        console.error("Error al cargar seguidores/seguidos:", err);
-    }
-}
-
-function configurarBotonSeguir() {
-    const followBtn = document.getElementById('follow-btn');
-
-    if (!followBtn) return;
-
-    // Solo mostramos el botón si NO es mi propio perfil y estoy logueado
-    if (!isOwnProfile && currentSessionUserId) {
-        // Actualizamos visualmente el botón
-        actualizarBotonSeguirUI();
-
-        // Evitamos que se acumulen event listeners reemplazando el botón por un clon
-        const newBtn = followBtn.cloneNode(true);
-        followBtn.parentNode.replaceChild(newBtn, followBtn);
-
-        newBtn.addEventListener('click', async () => {
-            newBtn.disabled = true;
-            try {
-                // Comprobación directa a la BD
-                const { data: verifyData, error: verifyError } = await supabaseClient
-                    .from('follows')
-                    .select('*')
-                    .match({ follower_id: currentSessionUserId, following_id: profileUserId });
-
-                if (verifyError) throw verifyError;
-
-                const actuallyFollowing = verifyData && verifyData.length > 0;
-
-                if (actuallyFollowing) {
-                    // DEJAR DE SEGUIR
-                    const { error } = await supabaseClient
-                        .from('follows')
-                        .delete()
-                        .match({ follower_id: currentSessionUserId, following_id: profileUserId });
-
-                    if (error) throw error;
-
-                    // Borrar notificacion
-                    await supabaseClient.from('notificaciones').delete().match({ tipo: 'follow', actor_id: currentSessionUserId, usuario_id: profileUserId });
-
-                    isFollowingUser = false;
-                } else {
-                    // SEGUIR
-                    const { error } = await supabaseClient
-                        .from('follows')
-                        .insert({ follower_id: currentSessionUserId, following_id: profileUserId });
-
-                    if (error) throw error;
-
-                    // Crear notificacion
-                    await supabaseClient.from('notificaciones').insert({
-                        usuario_id: profileUserId,
-                        actor_id: currentSessionUserId,
-                        tipo: 'follow'
-                    });
-
-                    isFollowingUser = true;
-                }
-
-                // Recargar la info completa para actualizar contadores y el estado del botón
-                await cargarSeguidores();
-                actualizarBotonSeguirUI();
-            } catch(err) {
-                console.error("Error al seguir/dejar de seguir:", err);
-
-                // Mostrar alerta con el error exacto para debugear el RLS
-                let errMsg = "Error desconocido.";
-                if (err.message) errMsg = err.message;
-                else if (err.details) errMsg = err.details;
-                else if (typeof err === 'string') errMsg = err;
-
-                alert(`Error al procesar la acción.\n\nDetalle: ${errMsg}`);
-            } finally {
-                newBtn.disabled = false;
-            }
-        });
-    }
-}
-
-function actualizarBotonSeguirUI() {
-    const followBtn = document.getElementById('follow-btn');
-    if (!followBtn) return;
-
-    if (isFollowingUser) {
-        followBtn.textContent = "Siguiendo";
-        followBtn.className = "text-sm bg-gray-200 text-gray-800 px-4 py-1.5 rounded-full font-semibold hover:bg-gray-300 transition ml-2 shadow-sm border border-gray-300";
+    // Foto de perfil
+    const profileImage = document.getElementById('profile-image');
+    const profileIcon = document.getElementById('profile-icon');
+    if (profile.imagen_url) {
+        profileImage.src = profile.imagen_url;
+        profileImage.classList.remove('hidden');
+        profileIcon.classList.add('hidden');
     } else {
-        followBtn.textContent = "Seguir";
-        followBtn.className = "text-sm bg-[#c41200] text-white px-4 py-1.5 rounded-full font-semibold hover:bg-[#a00e00] transition ml-2 shadow-sm";
+        profileImage.classList.add('hidden');
+        profileIcon.classList.remove('hidden');
+        profileIcon.textContent = (profile.nombre_usuario || 'U').charAt(0).toUpperCase();
+    }
+
+    // Estadísticas
+    document.getElementById('stats-seguidores').textContent = followersCount;
+    document.getElementById('stats-seguidos').textContent = followingCount;
+}
+
+function renderUserReviews(reviews) {
+    const container = document.getElementById('mis-resenas');
+    const emptyMsg = document.getElementById('mis-resenas-vacio');
+
+    if (!reviews || reviews.length === 0) {
+        emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
+        return;
+    }
+
+    emptyMsg.classList.add('hidden');
+    container.innerHTML = ''; // Limpiar
+
+    reviews.forEach(review => {
+        const reviewEl = document.createElement('div');
+        reviewEl.className = 'border-b last:border-b-0 pb-4 mb-4';
+        const restaurantName = review.restaurantes ? review.restaurantes.nombre : 'un restaurante';
+        const restaurantId = review.restaurantes ? review.restaurantes.id : null;
+
+        reviewEl.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold text-lg hover:text-[#c41200] cursor-pointer" onclick="window.location.href='restaurante.html?id=${restaurantId}'">${restaurantName}</h4>
+                <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
+            </div>
+            <p class="text-gray-600 text-sm mb-2">"${review.comentario}"</p>
+            <p class="text-xs text-gray-400">${new Date(review.created_at).toLocaleDateString('es-ES')}</p>
+        `;
+        container.appendChild(reviewEl);
+    });
+}
+
+async function loadFavoriteRestaurants(favIds) {
+    const favList = document.getElementById('mis-restaurantes-favoritos');
+    const emptyMsg = document.getElementById('mis-restaurantes-vacio');
+
+    if (!favIds || favIds.length === 0) {
+        emptyMsg.textContent = 'Aún no hay restaurantes favoritos.';
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from('restaurantes')
+        .select('id, nombre')
+        .in('id', favIds);
+
+    if (error) {
+        emptyMsg.textContent = 'Error al cargar favoritos.';
+        return;
+    }
+
+    emptyMsg.classList.add('hidden');
+    favList.innerHTML = '';
+    data.forEach(rest => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between text-sm';
+        li.innerHTML = `
+            <a href="restaurante.html?id=${rest.id}" class="hover:text-[#c41200] font-medium">${rest.nombre}</a>
+        `;
+        favList.appendChild(li);
+    });
+}
+
+// =========================================================================
+// 5. MANEJO DE EVENTOS Y ACCIONES
+// =========================================================================
+function setupEventListeners() {
+    // --- Edición de Biografía ---
+    const editProfileBtn = document.getElementById('edit-profile-btn');
+    const saveBioBtn = document.getElementById('save-bio-btn');
+    const cancelBioBtn = document.getElementById('cancel-bio-btn');
+
+    editProfileBtn.addEventListener('click', toggleBioEditMode);
+    saveBioBtn.addEventListener('click', saveProfile);
+    cancelBioBtn.addEventListener('click', toggleBioEditMode);
+
+    // --- Edición de Restaurantes Favoritos ---
+    const editFavsBtn = document.getElementById('edit-favs-btn');
+    const saveFavsBtn = document.getElementById('save-favs-btn');
+    const cancelFavsBtn = document.getElementById('cancel-favs-btn');
+
+    editFavsBtn.addEventListener('click', toggleFavsEditMode);
+    saveFavsBtn.addEventListener('click', saveFavoriteRestaurants);
+    cancelFavsBtn.addEventListener('click', toggleFavsEditMode);
+
+    // --- Modal de Seguidores/Seguidos ---
+    document.getElementById('followers-container').addEventListener('click', () => openFollowsModal('seguidores'));
+    document.getElementById('following-container').addEventListener('click', () => openFollowsModal('seguidos'));
+    document.getElementById('close-follows-modal').addEventListener('click', closeFollowsModal);
+}
+
+function setupActionButtons(followers) {
+    const editProfileBtn = document.getElementById('edit-profile-btn');
+    const editFavsBtn = document.getElementById('edit-favs-btn');
+    const followBtn = document.getElementById('follow-btn');
+
+    if (currentUserId === viewedUserId) {
+        // Es mi perfil
+        editProfileBtn.classList.remove('hidden');
+        editFavsBtn.classList.remove('hidden');
+        followBtn.classList.add('hidden');
+    } else {
+        // Es el perfil de otro
+        editProfileBtn.classList.add('hidden');
+        editFavsBtn.classList.add('hidden');
+        followBtn.classList.remove('hidden');
+
+        const isFollowing = followers.some(f => f.seguidor_id === currentUserId);
+        updateFollowButton(isFollowing);
+
+        followBtn.addEventListener('click', toggleFollow);
     }
 }
 
-function configurarModalesFollows() {
-    const modal = document.getElementById('follows-modal');
-    const modalTitle = document.getElementById('follows-modal-title');
-    const listContainer = document.getElementById('follows-list-container');
-    const closeBtn = document.getElementById('close-follows-modal');
+function updateFollowButton(isFollowing) {
+    const followBtn = document.getElementById('follow-btn');
+    if (isFollowing) {
+        followBtn.textContent = 'Dejar de Seguir';
+        followBtn.classList.replace('bg-[#c41200]', 'bg-gray-500');
+        followBtn.classList.replace('hover:bg-[#a00e00]', 'hover:bg-gray-600');
+    } else {
+        followBtn.textContent = 'Seguir';
+        followBtn.classList.replace('bg-gray-500', 'bg-[#c41200]');
+        followBtn.classList.replace('hover:bg-gray-600', 'hover:bg-[#a00e00]');
+    }
+}
 
-    if (!modal) return;
-
-    // Cerrar modal
-    closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
-
-    // Cerrar al hacer clic fuera
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
-    });
-
-    // Abrir Seguidores
-    const followersContainer = document.getElementById('followers-container');
-    if (followersContainer) {
-        const newFc = followersContainer.cloneNode(true);
-        followersContainer.parentNode.replaceChild(newFc, followersContainer);
-        newFc.addEventListener('click', () => {
-            abrirModalUsuarios("Seguidores", seguidoresData);
-        });
+async function toggleFollow() {
+    if (!currentUserId) {
+        alert('Debes iniciar sesión para seguir a otros usuarios.');
+        return;
     }
 
-    // Abrir Seguidos
-    const followingContainer = document.getElementById('following-container');
-    if (followingContainer) {
-        const newFic = followingContainer.cloneNode(true);
-        followingContainer.parentNode.replaceChild(newFic, followingContainer);
-        newFic.addEventListener('click', () => {
-            abrirModalUsuarios("Siguiendo", seguidosData);
-        });
-    }
+    const followBtn = document.getElementById('follow-btn');
+    followBtn.disabled = true;
 
-    function abrirModalUsuarios(titulo, listaUsuarios) {
-        modalTitle.textContent = titulo;
-        listContainer.innerHTML = '';
+    const { data, error } = await supabaseClient
+        .from('seguidores')
+        .select('*')
+        .eq('seguidor_id', currentUserId)
+        .eq('seguido_id', viewedUserId);
 
-        if (listaUsuarios.length === 0) {
-            listContainer.innerHTML = `<p class="text-center text-gray-500 mt-4 py-4">No hay usuarios para mostrar.</p>`;
+    const isFollowing = data && data.length > 0;
+
+    try {
+        if (isFollowing) {
+            // Dejar de seguir
+            await supabaseClient.from('seguidores').delete().match({ seguidor_id: currentUserId, seguido_id: viewedUserId });
+            updateFollowButton(false);
         } else {
-            listaUsuarios.forEach(u => {
-                const imgHtml = (u.imagen_url && u.imagen_url.trim() !== '')
-                    ? `<img src="${u.imagen_url}" class="w-10 h-10 rounded-full object-cover">`
-                    : `<div class="w-10 h-10 bg-red-100 text-[#c41200] rounded-full flex justify-center items-center font-bold text-lg"><i class="fas fa-user"></i></div>`;
-
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 cursor-pointer rounded transition";
-                div.onclick = () => { window.location.href = `perfil.html?id=${u.id}`; };
-                div.innerHTML = `
-                    ${imgHtml}
-                    <span class="font-semibold text-gray-800 hover:underline">${u.nombre_usuario || 'Usuario Anónimo'}</span>
-                `;
-                listContainer.appendChild(div);
-            });
+            // Seguir
+            await supabaseClient.from('seguidores').insert({ seguidor_id: currentUserId, seguido_id: viewedUserId });
+            updateFollowButton(true);
         }
+        // Recargar estadísticas de seguidores
+        const { count } = await supabaseClient.from('seguidores').select('*', { count: 'exact' }).eq('seguido_id', viewedUserId);
+        document.getElementById('stats-seguidores').textContent = count;
 
-        modal.classList.remove('hidden');
+    } catch (err) {
+        console.error('Error al seguir/dejar de seguir:', err);
+    } finally {
+        followBtn.disabled = false;
     }
 }
 
-// =========================================================================
-// 8. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
-// =========================================================================
+function toggleBioEditMode() {
+    document.getElementById('bio-container').classList.toggle('hidden');
+    document.getElementById('bio-edit-container').classList.toggle('hidden');
+    // Pre-rellenar el formulario
+    document.getElementById('bio-edit-textarea').value = document.getElementById('profile-bio').textContent;
+    document.getElementById('image-url-input').value = document.getElementById('profile-image').src;
+}
 
-async function configurarNotificaciones() {
-    const notifBtn = document.getElementById('nav-notifications-btn');
-    const notifDropdown = document.getElementById('nav-notifications-dropdown');
-    const notifBadge = document.getElementById('nav-notifications-badge');
-    const notifList = document.getElementById('nav-notifications-list');
-    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+async function saveProfile() {
+    const newBio = document.getElementById('bio-edit-textarea').value;
+    const newImageUrl = document.getElementById('image-url-input').value;
 
-    if (!notifBtn || !currentSessionUserId) return;
+    const { error } = await supabaseClient
+        .from('perfiles')
+        .update({ biografia: newBio, imagen_url: newImageUrl })
+        .eq('id', currentUserId);
 
-    // 1. Cargar notificaciones al iniciar
-    await cargarYRenderizarNotificaciones();
+    if (error) {
+        alert('Error al guardar el perfil.');
+    } else {
+        // Actualizar la UI sin recargar
+        document.getElementById('profile-bio').textContent = newBio;
+        if (newBio) document.getElementById('bio-container').classList.remove('hidden');
+        else document.getElementById('bio-container').classList.add('hidden');
 
-    // 2. Toggle del dropdown
-    notifBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        notifDropdown.classList.toggle('hidden');
-    });
-
-    // Cerrar si hace click afuera
-    document.addEventListener('click', (e) => {
-        if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
-            notifDropdown.classList.add('hidden');
+        if (newImageUrl) {
+            document.getElementById('profile-image').src = newImageUrl;
+            document.getElementById('profile-image').classList.remove('hidden');
+            document.getElementById('profile-icon').classList.add('hidden');
         }
-    });
-
-    // 3. Marcar todas como leídas
-    if(markAllReadBtn) {
-        // Remover listeners anteriores (útil si se llama multiples veces)
-        const newMarkBtn = markAllReadBtn.cloneNode(true);
-        markAllReadBtn.parentNode.replaceChild(newMarkBtn, markAllReadBtn);
-
-        newMarkBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            try {
-                await supabaseClient
-                    .from('notificaciones')
-                    .update({ leida: true })
-                    .eq('usuario_id', currentSessionUserId)
-                    .eq('leida', false);
-
-                await cargarYRenderizarNotificaciones();
-                // Opcional: notifDropdown.classList.add('hidden');
-            } catch(err) {
-                console.error("Error marcando notificaciones leídas:", err);
-            }
-        });
+        toggleBioEditMode();
     }
+}
 
-    async function cargarYRenderizarNotificaciones() {
-        try {
-            // Hacemos el fetch en dos pasos para evitar conflictos con los joins complejos
-            const { data: notificaciones, error } = await supabaseClient
-                .from('notificaciones')
-                .select('*')
-                .eq('usuario_id', currentSessionUserId)
-                .order('created_at', { ascending: false })
-                .limit(20);
+async function toggleFavsEditMode() {
+    const isEditing = document.getElementById('favs-edit-container').classList.toggle('hidden');
+    document.getElementById('mis-restaurantes-favoritos').classList.toggle('hidden');
 
-            if (error) throw error;
+    if (!isEditing) { // Si estamos entrando en modo edición
+        const selectContainer = document.getElementById('favs-select-container');
+        selectContainer.innerHTML = '<p class="text-sm text-gray-500">Cargando restaurantes...</p>';
 
-            notifList.innerHTML = '';
+        // Cargar todos los restaurantes para los selects
+        if (allUserRestaurants.length === 0) {
+            const { data } = await supabaseClient.from('restaurantes').select('id, nombre').order('nombre');
+            allUserRestaurants = data || [];
+        }
 
-            const unreadCount = notificaciones.filter(n => !n.leida).length;
+        // Obtener favoritos actuales
+        const { data: profile } = await supabaseClient.from('perfiles').select('restaurantes_favoritos').eq('id', currentUserId).single();
+        const currentFavs = profile.restaurantes_favoritos || [];
 
-            if (unreadCount > 0) {
-                notifBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                notifBadge.classList.remove('hidden');
-            } else {
-                notifBadge.classList.add('hidden');
-            }
-
-            if (notificaciones.length === 0) {
-                notifList.innerHTML = '<li class="px-4 py-4 text-center text-gray-500 text-sm">No tienes notificaciones</li>';
-                return;
-            }
-
-            // Cargar datos extra (actores y reseñas)
-            const actorIds = [...new Set(notificaciones.map(n => n.actor_id))];
-            const resenasIds = [...new Set(notificaciones.filter(n => n.resena_id).map(n => n.resena_id))];
-
-            let actoresMap = {};
-            let resenasMap = {};
-
-            if (actorIds.length > 0) {
-                const { data: actores } = await supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url').in('id', actorIds);
-                if (actores) actores.forEach(a => actoresMap[a.id] = a);
-            }
-
-            if (resenasIds.length > 0) {
-                const { data: resenasData } = await supabaseClient
-                    .from('resenas')
-                    .select('id, id_restaurante, restaurantes(nombre)')
-                    .in('id', resenasIds);
-
-                if (resenasData) resenasData.forEach(r => resenasMap[r.id] = r);
-            }
-
-            notificaciones.forEach(notif => {
-                const li = document.createElement('li');
-                const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
-                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass}`;
-
-                const actor = actoresMap[notif.actor_id];
-                const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
-                const actorImg = actor && actor.imagen_url ? actor.imagen_url : null;
-
-                let iconHtml = actorImg
-                    ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
-                    : `<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
-
-                let mensaje = '';
-                let urlDestino = '#';
-
-                if (notif.tipo === 'like') {
-                    const resenaInfo = resenasMap[notif.resena_id];
-                    const restNombre = resenaInfo && resenaInfo.restaurantes ? resenaInfo.restaurantes.nombre : 'un restaurante';
-                    const restId = resenaInfo ? resenaInfo.id_restaurante : null;
-
-                    mensaje = `<strong>${actorNombre}</strong> le dio me gusta a tu reseña en <strong>${restNombre}</strong>.`;
-
-                    if(restId) {
-                       urlDestino = `restaurante.html?id=${restId}`;
-                    }
-                } else if (notif.tipo === 'follow') {
-                    mensaje = `<strong>${actorNombre}</strong> ha empezado a seguirte.`;
-                    urlDestino = `perfil.html?id=${notif.actor_id}`;
-                }
-
-                // Parsear fecha
-                const fecha = new Date(notif.created_at);
-                const hoy = new Date();
-                let displayDate = '';
-                if (fecha.toDateString() === hoy.toDateString()) {
-                    displayDate = 'Hoy, ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                } else {
-                    displayDate = fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-                }
-
-                li.innerHTML = `
-                    <div class="flex items-start gap-3">
-                        <div class="mt-1">${iconHtml}</div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-800 leading-snug">${mensaje}</p>
-                            <span class="text-[10px] text-gray-400 mt-1 block">${displayDate}</span>
-                        </div>
-                        ${!notif.leida ? '<div class="w-2 h-2 bg-[#c41200] rounded-full mt-2"></div>' : ''}
-                    </div>
-                `;
-
-                li.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    // Marcar como leída al tocar
-                    if (!notif.leida) {
-                        await supabaseClient.from('notificaciones').update({ leida: true }).eq('id', notif.id);
-                    }
-                    if (urlDestino !== '#') {
-                        window.location.href = urlDestino;
-                    }
-                });
-
-                notifList.appendChild(li);
+        selectContainer.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            const select = document.createElement('select');
+            select.className = 'w-full border p-2 rounded text-sm mb-2';
+            let options = '<option value="">-- Selecciona un restaurante --</option>';
+            allUserRestaurants.forEach(r => {
+                const isSelected = currentFavs[i] === r.id ? 'selected' : '';
+                options += `<option value="${r.id}" ${isSelected}>${r.nombre}</option>`;
             });
-
-        } catch (err) {
-            console.error("Error obteniendo notificaciones:", err);
-            notifList.innerHTML = '<li class="px-4 py-4 text-center text-red-500 text-sm">Error al cargar</li>';
+            select.innerHTML = options;
+            selectContainer.appendChild(select);
         }
     }
+}
+
+async function saveFavoriteRestaurants() {
+    const selects = document.querySelectorAll('#favs-select-container select');
+    const newFavs = Array.from(selects).map(s => s.value).filter(Boolean); // Filtra vacíos
+
+    const { error } = await supabaseClient
+        .from('perfiles')
+        .update({ restaurantes_favoritos: newFavs })
+        .eq('id', currentUserId);
+
+    if (error) {
+        alert('Error al guardar los favoritos.');
+    } else {
+        await loadFavoriteRestaurants(newFavs);
+        toggleFavsEditMode();
+    }
+}
+
+async function openFollowsModal(type) {
+    const modal = document.getElementById('follows-modal');
+    const title = document.getElementById('follows-modal-title');
+    const listContainer = document.getElementById('follows-list-container');
+    modal.classList.remove('hidden');
+    listContainer.innerHTML = '<p class="text-center text-gray-500 text-sm">Cargando...</p>';
+
+    let query;
+    if (type === 'seguidores') {
+        title.textContent = 'Seguidores';
+        query = supabaseClient.from('seguidores').select('perfiles:seguidor_id (id, nombre_usuario, imagen_url)').eq('seguido_id', viewedUserId);
+    } else {
+        title.textContent = 'Seguidos';
+        query = supabaseClient.from('seguidores').select('perfiles:seguido_id (id, nombre_usuario, imagen_url)').eq('seguidor_id', viewedUserId);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data || data.length === 0) {
+        listContainer.innerHTML = `<p class="text-center text-gray-500 text-sm">No hay usuarios que mostrar.</p>`;
+        return;
+    }
+
+    listContainer.innerHTML = '';
+    data.forEach(item => {
+        const user = item.perfiles;
+        const userEl = document.createElement('div');
+        userEl.className = 'flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer';
+        userEl.onclick = () => window.location.href = `perfil.html?id=${user.id}`;
+        userEl.innerHTML = `
+            <img src="${user.imagen_url || ''}" class="w-10 h-10 rounded-full object-cover bg-gray-200">
+            <span class="font-semibold">${user.nombre_usuario}</span>
+        `;
+        listContainer.appendChild(userEl);
+    });
+}
+
+function closeFollowsModal() {
+    document.getElementById('follows-modal').classList.add('hidden');
 }
