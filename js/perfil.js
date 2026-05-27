@@ -49,7 +49,15 @@ async function loadProfileData() {
         // --- Renderizar Información del Perfil ---
         if (profileRes.error) throw profileRes.error;
         const profile = profileRes.data;
-        renderProfileHeader(profile, followersRes.count, followingRes.count);
+
+        // Si hay error en los seguidores, suele ser por RLS, pero para que no desaparezca el número, ponemos 0 por defecto.
+        const followersCount = followersRes.count !== null ? followersRes.count : (followersRes.data ? followersRes.data.length : 0);
+        const followingCount = followingRes.count !== null ? followingRes.count : (followingRes.data ? followingRes.data.length : 0);
+
+        if (followersRes.error) console.error("Error cargando seguidores (posible problema de RLS):", followersRes.error);
+        if (followingRes.error) console.error("Error cargando seguidos (posible problema de RLS):", followingRes.error);
+
+        renderProfileHeader(profile, followersCount, followingCount);
 
         // --- Renderizar Reseñas ---
         if (reviewsRes.error) throw reviewsRes.error;
