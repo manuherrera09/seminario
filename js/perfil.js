@@ -194,19 +194,21 @@ async function handleDeleteReview(reviewId) {
     if (isConfirmed) {
         try {
             // Por seguridad, primero borramos los votos asociados a la reseña
-            await supabaseClient
+            const { error: voteError } = await supabaseClient
                 .from('resenas_votos')
                 .delete()
                 .eq('resena_id', reviewId);
 
+            if (voteError) throw voteError;
+
             // Luego, borramos la reseña
-            const { error } = await supabaseClient
+            const { error: reviewError } = await supabaseClient
                 .from('resenas')
                 .delete()
                 .eq('id', reviewId)
                 .eq('id_usuario', currentUserId); // Doble chequeo de seguridad
 
-            if (error) throw error;
+            if (reviewError) throw reviewError;
 
             // Eliminar la reseña del DOM para una respuesta visual inmediata
             const reviewElement = document.querySelector(`[data-review-id='${reviewId}']`);
@@ -231,7 +233,7 @@ async function handleDeleteReview(reviewId) {
 
         } catch (error) {
             console.error('Error al eliminar la reseña:', error);
-            alert('No se pudo eliminar la reseña. Por favor, inténtalo de nuevo.');
+            alert(`No se pudo eliminar la reseña. Error: ${error.message}`);
         }
     }
 }
