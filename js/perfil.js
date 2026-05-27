@@ -50,7 +50,6 @@ async function loadProfileData() {
         if (profileRes.error) throw profileRes.error;
         const profile = profileRes.data;
 
-        // Si hay error en los seguidores, suele ser por RLS, pero para que no desaparezca el número, ponemos 0 por defecto.
         const followersCount = followersRes.count !== null ? followersRes.count : 0;
         const followingCount = followingRes.count !== null ? followingRes.count : 0;
 
@@ -61,8 +60,22 @@ async function loadProfileData() {
 
         // --- Renderizar Reseñas ---
         if (reviewsRes.error) throw reviewsRes.error;
-        renderUserReviews(reviewsRes.data);
-        document.getElementById('stats-resenas').textContent = reviewsRes.data.length;
+        const reviews = reviewsRes.data || [];
+
+        // Obtener los votos para las reseñas cargadas
+        const reviewIds = reviews.map(r => r.id);
+        let allVotes = [];
+        if (reviewIds.length > 0) {
+            const { data: votesData, error: votesError } = await supabaseClient
+                .from('resenas_votos')
+                .select('resena_id, usuario_id, tipo')
+                .in('resena_id', reviewIds);
+            if (votesError) throw votesError;
+            allVotes = votesData;
+        }
+
+        renderUserReviews(reviews, allVotes);
+        document.getElementById('stats-resenas').textContent = reviews.length;
 
         // --- Lógica de Botones (Seguir/Editar) ---
         const { data: isFollowingData, error: isFollowingError } = await supabaseClient
@@ -82,7 +95,6 @@ async function loadProfileData() {
         console.error('Error al cargar el perfil:', error);
         let errorMsg = error.message || JSON.stringify(error);
 
-        // Si el error es PGRST116 (No rows returned), suele ser por políticas de privacidad RLS
         if (error.code === 'PGRST116') {
             errorMsg = "No se encontró el usuario o las políticas de privacidad (RLS) impiden ver su información.";
         }
@@ -134,7 +146,7 @@ function renderProfileHeader(profile, followersCount, followingCount) {
     document.getElementById('stats-seguidos').textContent = followingCount;
 }
 
-function renderUserReviews(reviews) {
+function renderUserReviews(reviews, allVotes) {
     const container = document.getElementById('mis-resenas');
     const emptyMsg = document.getElementById('mis-resenas-vacio');
 
@@ -155,8 +167,16 @@ function renderUserReviews(reviews) {
         const restaurantName = review.restaurantes ? review.restaurantes.nombre : 'un restaurante';
         const restaurantId = review.restaurantes ? review.restaurantes.id : null;
 
+        // Lógica de votos
+        const reviewVotes = allVotes.filter(v => v.resena_id === review.id);
+        const likesCount = reviewVotes.filter(v => v.tipo === 'like').length;
+        const dislikesCount = reviewVotes.filter(v => v.tipo === 'dislike').length;
+        const userVote = currentUserId ? reviewVotes.find(v => v.usuario_id === currentUserId)?.tipo : null;
+
+        const likeClass = userVote === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50';
+        const dislikeClass = userVote === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
+
         let actionsHTML = '';
-        // Si el usuario está viendo su propio perfil, mostrar botones de acción
         if (currentUserId && currentUserId === viewedUserId) {
             actionsHTML = `
                 <div class="flex items-center gap-2 mt-3">
@@ -179,10 +199,24 @@ function renderUserReviews(reviews) {
                 <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
             </div>
             <p class="text-gray-600 text-sm mb-2">"${review.comentario}"</p>
-            ${actionsHTML}
+
+            <div class="flex items-center justify-between mt-3">
+                ${actionsHTML}
+                <div class="flex items-center gap-2 ml-auto">
+                    <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${review.id}" data-autor-id="${review.id_usuario}">
+                        <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${likesCount}</span>
+                    </button>
+                    <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${review.id}">
+                        <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${dislikesCount}</span>
+                    </button>
+                </div>
+            </div>
         `;
         container.appendChild(reviewEl);
     });
+
+    // Re-configurar los listeners de los botones de voto
+    configurarVotos();
 }
 
 
