@@ -57,14 +57,32 @@ async function loadProfileData() {
         document.getElementById('stats-resenas').textContent = reviewsRes.data.length;
 
         // --- Lógica de Botones (Seguir/Editar) ---
-        setupActionButtons(followersRes.data);
+        // Prevenir error si followersRes.data es null
+        const followersData = followersRes.data || [];
+        setupActionButtons(followersData);
 
         // --- Cargar Restaurantes Favoritos ---
         await loadFavoriteRestaurants(profile.restaurantes_favoritos);
 
     } catch (error) {
         console.error('Error al cargar el perfil:', error);
-        document.querySelector('main').innerHTML = '<p class="text-center text-red-500">Error al cargar el perfil. Es posible que el usuario no exista.</p>';
+        let errorMsg = error.message || JSON.stringify(error);
+
+        // Si el error es PGRST116 (No rows returned), suele ser por políticas de privacidad RLS
+        if (error.code === 'PGRST116') {
+            errorMsg = "No se encontró el usuario o las políticas de privacidad (RLS) impiden ver su información.";
+        }
+
+        document.querySelector('main').innerHTML = `
+            <div class="text-center py-20">
+                <i class="fas fa-user-slash text-5xl text-gray-300 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Error al cargar el perfil</h2>
+                <p class="text-gray-500 mb-4">Es posible que el usuario no exista o sea privado.</p>
+                <div class="bg-red-50 text-red-600 p-3 rounded text-sm inline-block max-w-lg mx-auto">
+                    <strong>Detalle técnico:</strong> ${errorMsg}
+                </div>
+            </div>
+        `;
     }
 }
 
