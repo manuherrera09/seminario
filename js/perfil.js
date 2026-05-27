@@ -41,7 +41,7 @@ async function loadProfileData() {
         // Cargar perfil, reseñas, seguidores y seguidos en paralelo
         const [profileRes, reviewsRes, followersRes, followingRes] = await Promise.all([
             supabaseClient.from('perfiles').select('*').eq('id', viewedUserId).single(),
-            supabaseClient.from('resenas').select('*, restaurantes(nombre, id)').eq('id_usuario', viewedUserId).order('created_at', { ascending: false }),
+            supabaseClient.from('resenas').select('*, restaurantes(id, nombre)').eq('id_usuario', viewedUserId).order('created_at', { ascending: false }),
             supabaseClient.from('seguidores').select('seguidor_id', { count: 'exact' }).eq('seguido_id', viewedUserId),
             supabaseClient.from('seguidores').select('seguido_id', { count: 'exact' }).eq('seguidor_id', viewedUserId)
         ]);
@@ -108,6 +108,7 @@ function renderUserReviews(reviews) {
 
     if (!reviews || reviews.length === 0) {
         emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
+        emptyMsg.classList.remove('hidden');
         return;
     }
 
@@ -117,20 +118,41 @@ function renderUserReviews(reviews) {
     reviews.forEach(review => {
         const reviewEl = document.createElement('div');
         reviewEl.className = 'border-b last:border-b-0 pb-4 mb-4';
+        reviewEl.setAttribute('data-review-id', review.id); // ID para poder eliminarlo del DOM
+
         const restaurantName = review.restaurantes ? review.restaurantes.nombre : 'un restaurante';
         const restaurantId = review.restaurantes ? review.restaurantes.id : null;
 
+        let actionsHTML = '';
+        // Si el usuario está viendo su propio perfil, mostrar botones de acción
+        if (currentUserId && currentUserId === viewedUserId) {
+            actionsHTML = `
+                <div class="flex items-center gap-2 mt-3">
+                    <button onclick="window.location.href='resena.html?edit_id=${review.id}'" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded font-semibold hover:bg-blue-200 transition">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </button>
+                    <button onclick="handleDeleteReview('${review.id}')" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded font-semibold hover:bg-red-200 transition">
+                        <i class="fas fa-trash mr-1"></i> Eliminar
+                    </button>
+                </div>
+            `;
+        }
+
         reviewEl.innerHTML = `
-            <div class="flex justify-between items-center mb-2">
-                <h4 class="font-bold text-lg hover:text-[#c41200] cursor-pointer" onclick="window.location.href='restaurante.html?id=${restaurantId}'">${restaurantName}</h4>
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="font-bold text-lg hover:text-[#c41200] cursor-pointer" onclick="window.location.href='restaurante.html?id=${restaurantId}'">${restaurantName}</h4>
+                    <p class="text-xs text-gray-400">${new Date(review.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
                 <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
             </div>
             <p class="text-gray-600 text-sm mb-2">"${review.comentario}"</p>
-            <p class="text-xs text-gray-400">${new Date(review.created_at).toLocaleDateString('es-ES')}</p>
+            ${actionsHTML}
         `;
         container.appendChild(reviewEl);
     });
 }
+
 
 async function loadFavoriteRestaurants(favIds) {
     const favList = document.getElementById('mis-restaurantes-favoritos');
@@ -166,6 +188,54 @@ async function loadFavoriteRestaurants(favIds) {
 // =========================================================================
 // 5. MANEJO DE EVENTOS Y ACCIONES
 // =========================================================================
+async function handleDeleteReview(reviewId) {
+    const isConfirmed = confirm('¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer.');
+
+    if (isConfirmed) {
+        try {
+            // Por seguridad, primero borramos los votos asociados a la reseña
+            await supabaseClient
+                .from('resenas_votos')
+                .delete()
+                .eq('resena_id', reviewId);
+
+            // Luego, borramos la reseña
+            const { error } = await supabaseClient
+                .from('resenas')
+                .delete()
+                .eq('id', reviewId)
+                .eq('id_usuario', currentUserId); // Doble chequeo de seguridad
+
+            if (error) throw error;
+
+            // Eliminar la reseña del DOM para una respuesta visual inmediata
+            const reviewElement = document.querySelector(`[data-review-id='${reviewId}']`);
+            if (reviewElement) {
+                reviewElement.remove();
+            }
+
+            // Actualizar el contador de reseñas
+            const statsResenas = document.getElementById('stats-resenas');
+            const currentCount = parseInt(statsResenas.textContent);
+            statsResenas.textContent = currentCount - 1;
+
+            // Si ya no quedan reseñas, mostrar el mensaje de vacío
+            const container = document.getElementById('mis-resenas');
+            if (container.childElementCount === 0) {
+                const emptyMsg = document.getElementById('mis-resenas-vacio');
+                emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
+                emptyMsg.classList.remove('hidden');
+            }
+
+            alert('Reseña eliminada correctamente.');
+
+        } catch (error) {
+            console.error('Error al eliminar la reseña:', error);
+            alert('No se pudo eliminar la reseña. Por favor, inténtalo de nuevo.');
+        }
+    }
+}
+
 function setupEventListeners() {
     // --- Edición de Biografía ---
     const editProfileBtn = document.getElementById('edit-profile-btn');

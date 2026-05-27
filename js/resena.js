@@ -9,6 +9,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUserId = null; // Variable para almacenar el ID del usuario logueado
+let editReviewId = null; // ID de la reseña a editar (si existe)
 
 // =========================================================================
 // 2. CARGAR RESTAURANTES DINÁMICAMENTE DESDE LA BASE DE DATOS
@@ -91,7 +92,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Error al cargar restaurantes:', err);
     selectRestaurante.innerHTML = '<option value="">Error al cargar la lista.</option>';
   }
+
+  // ---- Cargar datos de la reseña si es modo edición ----
+  const urlParams = new URLSearchParams(window.location.search);
+  editReviewId = urlParams.get('edit_id');
+
+  if (editReviewId && currentUserId) {
+    await cargarDatosResena();
+  }
 });
+
+// Función para cargar los datos de una reseña existente en el formulario
+async function cargarDatosResena() {
+    try {
+        const { data: resena, error } = await supabaseClient
+            .from('resenas')
+            .select('*')
+            .eq('id', editReviewId)
+            .eq('id_usuario', currentUserId) // Asegurar que sea del usuario actual
+            .single();
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            throw error;
+        }
+
+        if (!resena) {
+            alert('No se encontró la reseña o no tienes permisos para editarla.');
+            window.location.href = 'perfil.html';
+            return;
+        }
+
+        // Cambiar título y botón
+        const titleEl = document.querySelector('h2.text-2xl');
+        if (titleEl) titleEl.textContent = 'Editar Reseña';
+
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) submitBtn.textContent = 'Guardar Cambios';
+
+        // Llenar el formulario
+        document.getElementById('restaurante').value = resena.id_restaurante;
+        document.getElementById('comentario').value = resena.comentario;
+
+        // Función segura para marcar estrellas
+        const checkStar = (prefix, value) => {
+            if (value === null || value === undefined) return;
+            const parsedValue = Number(value); // convierte "4.0" a 4 para que coincida con el ID
+            const el = document.getElementById(`${prefix}-${parsedValue}`);
+            if (el) el.checked = true;
+        };
+
+        checkStar('comida', resena.calidad_comida);
+        checkStar('aten', resena.atencion);
+        checkStar('prec', resena.precio);
+        checkStar('amb', resena.ambiente);
+
+    } catch (error) {
+        console.error('Error al cargar la reseña para editar:', error);
+        alert(`Error al cargar los datos de la reseña: ${error.message || JSON.stringify(error)}`);
+    }
+}
+
 
 // =========================================================================
 // 3. GUARDAR LA RESEÑA EN SUPABASE
@@ -107,7 +168,7 @@ form.addEventListener('submit', async (e) => {
 
   const submitBtn = document.getElementById('submit-btn');
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Publicando...';
+  submitBtn.textContent = editReviewId ? 'Guardando...' : 'Publicando...';
 
   const restauranteId = document.getElementById('restaurante').value;
   const comentario = document.getElementById('comentario').value;
@@ -124,34 +185,46 @@ form.addEventListener('submit', async (e) => {
       general = (comida + atencion + precio + ambiente) / 4;
   }
 
+  const resenaData = {
+    id_restaurante: restauranteId,
+    id_usuario: currentUserId,
+    puntuacion_general: general,
+    calidad_comida: comida,
+    atencion: atencion,
+    precio: precio,
+    ambiente: ambiente,
+    comentario: comentario
+  };
+
   try {
-    // Insertamos la nueva reseña en la tabla 'resenas'
-    const { data, error } = await supabaseClient
-      .from('resenas')
-      .insert([{
-        id_restaurante: restauranteId,
-        id_usuario: currentUserId,     // AHORA SÍ ENVIAMOS EL ID DEL USUARIO LOGUEADO
-        puntuacion_general: general,   // Ahora se guarda con decimales (ej: 4.25)
-        calidad_comida: comida,
-        atencion: atencion,
-        precio: precio,
-        ambiente: ambiente, // Agregado el campo ambiente a la base de datos
-        comentario: comentario
-      }]);
+    if (editReviewId) {
+        // Actualizar reseña existente
+        const { error } = await supabaseClient
+            .from('resenas')
+            .update(resenaData)
+            .eq('id', editReviewId)
+            .eq('id_usuario', currentUserId); // Doble validación de seguridad
 
-    if (error) throw error;
+        if (error) throw error;
+        alert("¡Reseña actualizada con éxito!");
+        window.location.href = 'perfil.html'; // Volver al perfil
+    } else {
+        // Insertar nueva reseña
+        const { error } = await supabaseClient
+            .from('resenas')
+            .insert([resenaData]);
 
-    alert("¡Reseña publicada con éxito!");
-    form.reset();
-
-    // Redirigir al inicio o a su perfil
-    window.location.href = 'index.html';
+        if (error) throw error;
+        alert("¡Reseña publicada con éxito!");
+        form.reset();
+        window.location.href = 'index.html';
+    }
 
   } catch (err) {
     console.error('Error al guardar la reseña:', err);
-    alert("Hubo un error al guardar tu reseña. Revisa la consola para más detalles.");
+    alert(`Hubo un error al guardar tu reseña: ${err.message || JSON.stringify(err)}`);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Publicar Reseña';
+    submitBtn.textContent = editReviewId ? 'Guardar Cambios' : 'Publicar Reseña';
   }
 });
