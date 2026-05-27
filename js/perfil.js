@@ -459,25 +459,31 @@ async function openFollowsModal(type) {
     modal.classList.remove('hidden');
     listContainer.innerHTML = '<p class="text-center text-gray-500 text-sm">Cargando...</p>';
 
-    let query;
+    let idsToFetch = [];
     if (type === 'seguidores') {
         title.textContent = 'Seguidores';
-        query = supabaseClient.from('follows').select('perfiles:follower_id (id, nombre_usuario, imagen_url)').eq('following_id', viewedUserId);
+        const { data: followsData, error: fError } = await supabaseClient.from('follows').select('follower_id').eq('following_id', viewedUserId);
+        if (!fError && followsData) idsToFetch = followsData.map(f => f.follower_id);
     } else {
         title.textContent = 'Seguidos';
-        query = supabaseClient.from('follows').select('perfiles:following_id (id, nombre_usuario, imagen_url)').eq('follower_id', viewedUserId);
+        const { data: followsData, error: fError } = await supabaseClient.from('follows').select('following_id').eq('follower_id', viewedUserId);
+        if (!fError && followsData) idsToFetch = followsData.map(f => f.following_id);
     }
 
-    const { data, error } = await query;
-
-    if (error || !data || data.length === 0) {
+    if (idsToFetch.length === 0) {
         listContainer.innerHTML = `<p class="text-center text-gray-500 text-sm">No hay usuarios que mostrar.</p>`;
         return;
     }
 
+    const { data, error } = await supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url').in('id', idsToFetch);
+
+    if (error || !data || data.length === 0) {
+        listContainer.innerHTML = `<p class="text-center text-gray-500 text-sm">No se pudieron cargar los usuarios.</p>`;
+        return;
+    }
+
     listContainer.innerHTML = '';
-    data.forEach(item => {
-        const user = item.perfiles;
+    data.forEach(user => {
         const userEl = document.createElement('div');
         userEl.className = 'flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer';
         userEl.onclick = () => window.location.href = `perfil.html?id=${user.id}`;
