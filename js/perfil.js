@@ -42,8 +42,8 @@ async function loadProfileData() {
         const [profileRes, reviewsRes, followersRes, followingRes] = await Promise.all([
             supabaseClient.from('perfiles').select('*').eq('id', viewedUserId).single(),
             supabaseClient.from('resenas').select('*, restaurantes(id, nombre)').eq('id_usuario', viewedUserId).order('created_at', { ascending: false }),
-            supabaseClient.from('seguidores').select('seguidor_id', { count: 'exact' }).eq('seguido_id', viewedUserId),
-            supabaseClient.from('seguidores').select('seguido_id', { count: 'exact' }).eq('seguidor_id', viewedUserId)
+            supabaseClient.from('follows').select('seguidor_id', { count: 'exact' }).eq('seguido_id', viewedUserId),
+            supabaseClient.from('follows').select('seguido_id', { count: 'exact' }).eq('seguidor_id', viewedUserId)
         ]);
 
         // --- Renderizar Información del Perfil ---
@@ -335,7 +335,7 @@ async function toggleFollow() {
     followBtn.disabled = true;
 
     const { data, error } = await supabaseClient
-        .from('seguidores')
+        .from('follows')
         .select('*')
         .eq('seguidor_id', currentUserId)
         .eq('seguido_id', viewedUserId);
@@ -345,15 +345,15 @@ async function toggleFollow() {
     try {
         if (isFollowing) {
             // Dejar de seguir
-            await supabaseClient.from('seguidores').delete().match({ seguidor_id: currentUserId, seguido_id: viewedUserId });
+            await supabaseClient.from('follows').delete().match({ seguidor_id: currentUserId, seguido_id: viewedUserId });
             updateFollowButton(false);
         } else {
             // Seguir
-            await supabaseClient.from('seguidores').insert({ seguidor_id: currentUserId, seguido_id: viewedUserId });
+            await supabaseClient.from('follows').insert({ seguidor_id: currentUserId, seguido_id: viewedUserId });
             updateFollowButton(true);
         }
         // Recargar estadísticas de seguidores
-        const { count } = await supabaseClient.from('seguidores').select('*', { count: 'exact' }).eq('seguido_id', viewedUserId);
+        const { count } = await supabaseClient.from('follows').select('*', { count: 'exact' }).eq('seguido_id', viewedUserId);
         document.getElementById('stats-seguidores').textContent = count;
 
     } catch (err) {
@@ -457,10 +457,10 @@ async function openFollowsModal(type) {
     let query;
     if (type === 'seguidores') {
         title.textContent = 'Seguidores';
-        query = supabaseClient.from('seguidores').select('perfiles:seguidor_id (id, nombre_usuario, imagen_url)').eq('seguido_id', viewedUserId);
+        query = supabaseClient.from('follows').select('perfiles:seguidor_id (id, nombre_usuario, imagen_url)').eq('seguido_id', viewedUserId);
     } else {
         title.textContent = 'Seguidos';
-        query = supabaseClient.from('seguidores').select('perfiles:seguido_id (id, nombre_usuario, imagen_url)').eq('seguidor_id', viewedUserId);
+        query = supabaseClient.from('follows').select('perfiles:seguido_id (id, nombre_usuario, imagen_url)').eq('seguidor_id', viewedUserId);
     }
 
     const { data, error } = await query;
