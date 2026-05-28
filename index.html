@@ -4,10 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TrackEat - Inicio</title>
+  <!-- Google Fonts: Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuración de Tailwind para usar Montserrat
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
   <!-- Font Awesome para los iconos de redes sociales -->
   <!--suppress HtmlUnknownTarget -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -33,23 +50,33 @@
     }
 
     .bg-slide.active {
-      opacity: 0.4; /* Mantener la misma opacidad que tenía la foto original */
+      opacity: 1; /* La foto se muestra al 100%, la oscuridad la da el overlay */
+    }
+
+    /* Ocultar barra de desplazamiento en la lista de sugerencias */
+    #suggestions-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    #suggestions-list::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 10px;
     }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
+<!-- NAVBAR -->
+<nav class="bg-[#c41200] p-4 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
   <div class="container mx-auto flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
     <div class="flex items-center space-x-4">
       <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
-      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition shadow-sm">Dejar Reseña</a>
       <a href="perfil.html" class="hover:text-red-200 transition ml-4">Mi Perfil</a>
       <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3 relative">
         <!-- El contenido de este div cambiará dinámicamente con JS si hay sesión -->
         <a href="login.html" id="nav-login-btn" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
-        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition shadow-sm">Regístrate</a>
 
         <!-- Contenedor base de notificaciones para que JS lo pueda inyectar si no estaba -->
         <div id="nav-notifications-container" class="relative hidden ml-3 z-50"></div>
@@ -58,46 +85,63 @@
   </div>
 </nav>
 
-<div class="relative bg-gray-900 overflow-hidden relative z-10">
-  <!-- Background Carousel with overlay -->
+<!-- HERO SECTION PANTALLA COMPLETA -->
+<div class="relative bg-gray-900 overflow-hidden flex flex-col items-center justify-center min-h-screen w-full pt-16">
+
+  <!-- Carrusel de fondo -->
   <div class="bg-carousel" id="hero-carousel">
-    <!-- Restaurante 1 (Original) -->
-    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 1" class="bg-slide active">
-    <!-- Restaurante 2 -->
-    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 2" class="bg-slide">
-    <!-- Restaurante 3 -->
-    <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 3" class="bg-slide">
-    <!-- Restaurante 4 -->
-    <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 4" class="bg-slide">
-    <!-- Restaurante 5 -->
-    <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Restaurante 5" class="bg-slide">
+    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Fondo 1" class="bg-slide active">
+    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Fondo 2" class="bg-slide">
+    <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Fondo 3" class="bg-slide">
+    <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Fondo 4" class="bg-slide">
   </div>
 
-  <div class="container mx-auto p-6 relative z-10">
-    <div class="text-center py-10 md:py-24">
+  <!-- Overlay oscuro más claro -->
+  <div class="absolute inset-0 bg-black/40 z-0"></div>
+
+  <!-- Contenido Central del Hero -->
+  <div class="container mx-auto px-6 relative z-10 w-full text-center">
+
+      <!-- Textos -->
       <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">Bienvenido a TrackEat</h1>
       <p class="text-xl md:text-2xl text-gray-200 mb-10 drop-shadow-md">Encuentra y comparte las mejores experiencias gastronómicas.</p>
 
-      <!-- Barra de búsqueda interactiva -->
-      <div class="max-w-2xl mx-auto relative">
-        <div class="relative">
-          <input type="text" id="search-input" class="w-full py-4 pl-12 pr-4 text-gray-800 rounded-full shadow-xl focus:outline-none focus:ring-4 focus:ring-[#c41200] transition text-lg" placeholder="Busca un restaurante o un usuario...">
-          <i class="fas fa-search absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl"></i>
+      <!-- Barra de Búsqueda Estilo Píldora -->
+      <!-- Reducimos el ancho máximo de max-w-3xl a max-w-2xl -->
+      <div class="max-w-2xl mx-auto relative group">
+        <div class="relative bg-white rounded-full shadow-2xl flex items-center p-1 border-4 border-white/20 transition-all duration-300 focus-within:border-white/50 focus-within:shadow-[0_0_30px_rgba(196,18,0,0.3)]">
+          <div class="pl-5 text-gray-400 text-xl">
+              <i class="fas fa-search"></i>
+          </div>
+          <input type="text" id="search-input" class="w-full py-4 pl-4 pr-4 bg-transparent text-gray-800 focus:outline-none text-lg placeholder-gray-400" placeholder="Busca un restaurante o un usuario...">
+          <button id="btn-hero-explorar" class="shrink-0 bg-[#c41200] hover:bg-[#a00e00] text-white font-bold py-3 px-8 rounded-full transition-colors shadow-md mr-1 whitespace-nowrap">
+              Explorar
+          </button>
         </div>
-        <!-- Contenedor de sugerencias (oculto por defecto) -->
-        <div id="search-suggestions" class="absolute w-full mt-2 bg-white rounded-lg shadow-2xl overflow-hidden hidden z-20 text-left">
-          <ul id="suggestions-list" class="max-h-60 overflow-y-auto">
+
+        <!-- Contenedor de sugerencias -->
+        <div id="search-suggestions" class="absolute w-full mt-3 bg-white rounded-2xl shadow-2xl overflow-hidden hidden z-20 text-left border border-gray-100">
+          <ul id="suggestions-list" class="max-h-72 overflow-y-auto">
             <!-- Las sugerencias se llenarán con JS -->
           </ul>
         </div>
       </div>
-    </div>
+
   </div>
 </div>
 
 <main class="container mx-auto p-6 flex-grow">
-  <section class="mt-8">
-    <h2 class="text-2xl font-semibold mb-6 border-b pb-2 text-gray-800">Reseñas Recientes</h2>
+  <section class="mt-12">
+    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-l-4 border-[#c41200] pl-4">Tendencias de la Semana</h2>
+
+    <!-- Contenedor de diseño asimétrico Bento Grid -->
+    <div class="tendencias-container">
+      <p class="text-gray-500 w-full text-center py-8">Cargando tendencias...</p>
+    </div>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-l-4 border-[#c41200] pl-4">Reseñas Recientes</h2>
 
     <div id="recent-reviews-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <p class="text-gray-500 col-span-full text-center py-8">Cargando reseñas recientes...</p>
