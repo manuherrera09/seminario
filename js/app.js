@@ -253,129 +253,170 @@ function mostrarSugerencias(resultados, query, suggestionsList, suggestionsConta
 }
 
 // =========================================================================
-// 4. LÓGICA DE TENDENCIAS (DISEÑO ASIMÉTRICO)
+// 4. LÓGICA DE TENDENCIAS (DISEÑO ASIMÉTRICO DINÁMICO)
 // =========================================================================
 async function cargarTendencias() {
     const container = document.querySelector('.tendencias-container');
     if (!container) return;
 
     try {
-        const { data: restaurantesData, error: restError } = await supabaseClient
-            .from('restaurantes')
-            .select('*, resenas(puntuacion_general)');
+        let tendencias = [];
 
-        if (restError) throw restError;
+        // 1. Intentar obtener el top semanal desde la función RPC de Supabase
+        try {
+            const { data: topIdsData, error: rpcError } = await supabaseClient.rpc('obtener_tendencias_semanales');
 
-        const tendencias = restaurantesData.map(rest => {
-            const resenas = rest.resenas || [];
-            const count = resenas.length;
-            let avg = 0;
-            if (count > 0) {
-                const sum = resenas.reduce((acc, curr) => acc + (curr.puntuacion_general || 0), 0);
-                avg = sum / count;
+            if (!rpcError && topIdsData && topIdsData.length >= 6) {
+                const topIds = topIdsData.map(item => item.id);
+                // Restamos 7 días para filtrar las reseñas
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+                const { data: restaurantesData, error: restError } = await supabaseClient
+                    .from('restaurantes')
+                    .select('*, resenas!inner(puntuacion_general)')
+                    .in('id', topIds)
+                    .gte('resenas.created_at', sevenDaysAgo);
+
+                if (!restError && restaurantesData) {
+                    tendencias = restaurantesData.map(rest => {
+                        const resenas = rest.resenas || [];
+                        const count = resenas.length;
+                        let avg = 0;
+                        if (count > 0) {
+                            const sum = resenas.reduce((acc, curr) => acc + (curr.puntuacion_general || 0), 0);
+                            avg = sum / count;
+                        }
+                        return { ...rest, rating: avg, resenasCount: count };
+                    }).sort((a, b) => topIds.indexOf(a.id) - topIds.indexOf(b.id)); // Respetamos el orden que dio el RPC
+                }
+            } else {
+                throw new Error("No hay suficientes tendencias semanales (menos de 6)");
             }
-            return { ...rest, rating: avg, resenasCount: count };
-        }).sort((a, b) => b.rating - a.rating || b.resenasCount - a.resenasCount);
+        } catch (e) {
+            console.warn("Usando el top histórico general como fallback. Razón:", e.message || e);
 
-        const top6 = tendencias.slice(0, 6);
+            // 2. Fallback: Si no hay 6 tendencias en esta semana, rellenamos con los mejores restaurantes de todos los tiempos.
+            const { data: allRest, error: allRestErr } = await supabaseClient
+                .from('restaurantes')
+                .select('*, resenas(puntuacion_general)');
 
+            if (!allRestErr && allRest) {
+                tendencias = allRest.map(rest => {
+                    const resenas = rest.resenas || [];
+                    const count = resenas.length;
+                    let avg = 0;
+                    if (count > 0) {
+                        const sum = resenas.reduce((acc, curr) => acc + (curr.puntuacion_general || 0), 0);
+                        avg = sum / count;
+                    }
+                    return { ...rest, rating: avg, resenasCount: count };
+                }).filter(rest => rest.resenasCount > 0) // Que tengan al menos 1 reseña
+                  .sort((a, b) => b.rating - a.rating || b.resenasCount - a.resenasCount) // Orden por rating y luego por cantidad
+                  .slice(0, 6);
+            }
+        }
+
+        // 3. Renderizar
         container.innerHTML = '';
 
-        if (top6.length < 6) {
-            container.innerHTML = '<p class="text-gray-500 py-4 w-full text-center col-span-full">No hay suficientes datos para mostrar tendencias.</p>';
+        if (tendencias.length < 6) {
+            container.innerHTML = '<p class="text-gray-500 py-4 w-full text-center col-span-full">Aún no hay suficientes reseñas para mostrar tendencias.</p>';
             return;
         }
 
-        const [top1, top2, top3, top4, top5, top6_] = top6;
+        const top6 = tendencias.slice(0, 6);
+        let html = '';
 
-        container.innerHTML = `
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Bloque Izquierdo (Destacado #1) -->
-                <div class="relative rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top1.id}'">
+        // BLOQUE SUPERIOR (Top 1, 2 y 3)
+        html += `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">`;
+
+        // --- Top 1 (Destacado Izquierdo) ---
+        if (top6.length > 0) {
+            const top1 = top6[0];
+            html += `
+                <div class="relative rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2 flex flex-col" onclick="window.location.href='restaurante.html?id=${top1.id}'">
                     <img src="${top1.imagen_url || ''}" alt="${top1.nombre}" class="w-full h-full object-cover min-h-[400px]">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                     <div class="absolute top-4 left-4 bg-[#c41200] text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-md z-10">1</div>
-                    <div class="absolute bottom-0 left-0 p-6 text-white">
-                        <span class="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">${top1.categoria || ''}</span>
-                        <h3 class="font-bold text-3xl mt-2 drop-shadow-md">${top1.nombre}</h3>
+                    <div class="absolute bottom-0 left-0 p-6 text-white w-full">
+                        <span class="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">${top1.categoria || 'Destacado'}</span>
+                        <h3 class="font-bold text-3xl mt-2 drop-shadow-md truncate" title="${top1.nombre}">${top1.nombre}</h3>
                         <div class="flex items-center mt-3 text-sm">
                             <i class="fas fa-star text-yellow-400"></i>
-                            <i class="fas fa-star text-yellow-400"></i>
-                            <i class="fas fa-star text-yellow-400"></i>
-                            <i class="fas fa-star text-yellow-400"></i>
-                            <i class="fas fa-star-half-alt text-yellow-400"></i>
-                            <span class="ml-2 font-bold">${top1.rating.toFixed(1)}</span>
+                            <span class="ml-1 font-bold text-yellow-400">${top1.rating.toFixed(1)}</span>
                             <span class="text-gray-300 ml-2">(${top1.resenasCount} reseñas)</span>
                         </div>
                     </div>
                 </div>
+            `;
+        }
 
-                <!-- Bloque Derecho Superior (#2 y #3) -->
-                <div class="flex flex-col gap-6">
-                    <div class="relative flex bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top2.id}'">
-                        <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">2</div>
-                        <img src="${top2.imagen_url || ''}" alt="${top2.nombre}" class="w-2/5 object-cover">
-                        <div class="p-4 flex flex-col justify-center">
-                            <span class="text-xs font-bold text-red-500 uppercase">${top2.categoria || ''}</span>
-                            <h4 class="font-bold text-lg mt-1">${top2.nombre}</h4>
-                            <div class="flex items-center text-sm mt-2">
-                                <span class="font-bold text-yellow-500 flex items-center gap-1">${top2.rating.toFixed(1)} <i class="fas fa-star"></i></span>
-                                <span class="text-gray-400 ml-2 text-xs">(${top2.resenasCount} reseñas)</span>
-                            </div>
+        // --- Top 2 y 3 (Columna Derecha) ---
+        if (top6.length > 1) {
+            html += `<div class="flex flex-col gap-6">`;
+
+            // Top 2
+            const top2 = top6[1];
+            html += `
+                <div class="relative flex flex-grow bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top2.id}'">
+                    <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">2</div>
+                    <img src="${top2.imagen_url || ''}" alt="${top2.nombre}" class="w-2/5 object-cover min-h-[120px]">
+                    <div class="p-4 flex flex-col justify-center w-3/5">
+                        <span class="text-xs font-bold text-red-500 uppercase truncate">${top2.categoria || 'Destacado'}</span>
+                        <h4 class="font-bold text-lg mt-1 truncate" title="${top2.nombre}">${top2.nombre}</h4>
+                        <div class="flex items-center text-sm mt-2">
+                            <span class="font-bold text-yellow-500 flex items-center gap-1">${top2.rating.toFixed(1)} <i class="fas fa-star"></i></span>
+                            <span class="text-gray-400 ml-2 text-xs">(${top2.resenasCount} reseñas)</span>
                         </div>
                     </div>
-                    <div class="relative flex bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top3.id}'">
+                </div>
+            `;
+
+            // Top 3
+            if (top6.length > 2) {
+                const top3 = top6[2];
+                html += `
+                    <div class="relative flex flex-grow bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top3.id}'">
                         <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">3</div>
-                        <img src="${top3.imagen_url || ''}" alt="${top3.nombre}" class="w-2/5 object-cover">
-                        <div class="p-4 flex flex-col justify-center">
-                            <span class="text-xs font-bold text-red-500 uppercase">${top3.categoria || ''}</span>
-                            <h4 class="font-bold text-lg mt-1">${top3.nombre}</h4>
+                        <img src="${top3.imagen_url || ''}" alt="${top3.nombre}" class="w-2/5 object-cover min-h-[120px]">
+                        <div class="p-4 flex flex-col justify-center w-3/5">
+                            <span class="text-xs font-bold text-red-500 uppercase truncate">${top3.categoria || 'Destacado'}</span>
+                            <h4 class="font-bold text-lg mt-1 truncate" title="${top3.nombre}">${top3.nombre}</h4>
                             <div class="flex items-center text-sm mt-2">
                                 <span class="font-bold text-yellow-500 flex items-center gap-1">${top3.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                                 <span class="text-gray-400 ml-2 text-xs">(${top3.resenasCount} reseñas)</span>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                `;
+            }
+            html += `</div>`; // Fin Columna Derecha
+        }
+        html += `</div>`; // Fin BLOQUE SUPERIOR
 
-            <!-- Bloque Inferior (#4, #5, #6) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top4.id}'">
-                    <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">4</div>
-                    <img src="${top4.imagen_url || ''}" alt="${top4.nombre}" class="w-full h-40 object-cover">
-                    <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top4.nombre}</h5>
-                        <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500">${top4.categoria || ''}</span>
-                            <span class="font-bold text-yellow-500 flex items-center gap-1">${top4.rating.toFixed(1)} <i class="fas fa-star"></i></span>
+        // BLOQUE INFERIOR (Top 4, 5 y 6)
+        if (top6.length > 3) {
+            html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-6">`;
+            for (let i = 3; i < top6.length; i++) {
+                const rest = top6[i];
+                html += `
+                    <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${rest.id}'">
+                        <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">${i + 1}</div>
+                        <img src="${rest.imagen_url || ''}" alt="${rest.nombre}" class="w-full h-40 object-cover">
+                        <div class="p-4">
+                            <h5 class="font-bold text-md truncate" title="${rest.nombre}">${rest.nombre}</h5>
+                            <div class="flex justify-between items-center text-sm mt-1">
+                                <span class="text-gray-500 truncate mr-2">${rest.categoria || ''}</span>
+                                <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${rest.rating.toFixed(1)} <i class="fas fa-star"></i></span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top5.id}'">
-                    <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">5</div>
-                    <img src="${top5.imagen_url || ''}" alt="${top5.nombre}" class="w-full h-40 object-cover">
-                    <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top5.nombre}</h5>
-                        <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500">${top5.categoria || ''}</span>
-                            <span class="font-bold text-yellow-500 flex items-center gap-1">${top5.rating.toFixed(1)} <i class="fas fa-star"></i></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top6_.id}'">
-                    <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">6</div>
-                    <img src="${top6_.imagen_url || ''}" alt="${top6_.nombre}" class="w-full h-40 object-cover">
-                    <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top6_.nombre}</h5>
-                        <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500">${top6_.categoria || ''}</span>
-                            <span class="font-bold text-yellow-500 flex items-center gap-1">${top6_.rating.toFixed(1)} <i class="fas fa-star"></i></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+                `;
+            }
+            html += `</div>`; // Fin BLOQUE INFERIOR
+        }
+
+        container.innerHTML = html;
 
     } catch (err) {
         console.error("Error cargando tendencias:", err);
