@@ -293,6 +293,8 @@ async function cargarResenasRecientes() {
     resenasData.forEach(resena => {
       const restauranteNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante Desconocido';
       const usuarioNombre = resena.perfiles && resena.perfiles.nombre_usuario ? resena.perfiles.nombre_usuario : 'Usuario Anónimo';
+      const restauranteId = resena.id_restaurante || resena.restaurante_id;
+      const usuarioId = resena.id_usuario;
 
       // Validación más segura de los ratings para evitar posibles problemas con toFixed()
       let ratingTotal = 'N/A';
@@ -326,15 +328,15 @@ async function cargarResenasRecientes() {
       resenaDiv.className = "bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition flex flex-col h-full relative z-10";
 
       resenaDiv.innerHTML = `
-        <div class="flex justify-between items-start mb-4 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante || resena.restaurante_id}'">
+        <div class="flex justify-between items-start mb-4">
           <div>
-            <h3 class="font-bold text-lg text-gray-800">${restauranteNombre}</h3>
-            <p class="text-sm text-gray-500">Por ${usuarioNombre}</p>
+            <a href="restaurante.html?id=${restauranteId}" class="font-bold text-lg text-gray-800 hover:text-[#c41200] hover:underline transition">${restauranteNombre}</a>
+            <p class="text-sm text-gray-500 mt-1">Por <a href="perfil.html?id=${usuarioId}" class="font-semibold text-gray-600 hover:text-[#c41200] hover:underline transition">${usuarioNombre}</a></p>
           </div>
           <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
         </div>
-        <p class="text-gray-700 mb-4 line-clamp-3 flex-grow cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante || resena.restaurante_id}'">${resena.comentario || 'Sin comentario'}</p>
-        <div class="text-sm text-gray-500 grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-gray-100 mb-3 cursor-pointer" onclick="window.location.href='restaurante.html?id=${resena.id_restaurante || resena.restaurante_id}'">
+        <p class="text-gray-700 mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
+        <div class="text-sm text-gray-500 grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-gray-100 mb-3">
            <span>Comida: ${comidaRating}</span>
            <span>Atención: ${atencionRating}</span>
            <span>Precio: ${precioRating}</span>
