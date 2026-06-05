@@ -4,10 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reseñas de Restaurantes</title>
+  <!-- Google Fonts: Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuración de Tailwind para usar Montserrat
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
   <!-- Font Awesome para los iconos de redes sociales -->
   <!--suppress HtmlUnknownTarget -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -62,21 +79,30 @@
     .rating-group label:hover ~ label {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath fill='%23eab308' d='M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z'/%3E%3C/svg%3E") !important;
     }
+
+    /* Ocultar barra de desplazamiento en la lista de sugerencias */
+    #resena-search-suggestions-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    #resena-search-suggestions-list::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 10px;
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50 fixed top-0 left-0 right-0">
   <div class="container mx-auto flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
     <div class="flex items-center space-x-4">
       <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
-      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition shadow-sm">Dejar Reseña</a>
       <a href="perfil.html" class="hover:text-red-200 transition ml-4">Mi Perfil</a>
       <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3 relative">
         <!-- El contenido de este div cambiará dinámicamente con JS si hay sesión -->
         <a href="login.html" id="nav-login-btn" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
-        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition shadow-sm">Regístrate</a>
 
         <!-- Contenedor base de notificaciones para que JS lo pueda inyectar si no estaba -->
         <div id="nav-notifications-container" class="relative hidden ml-3 z-50"></div>
@@ -85,7 +111,7 @@
   </div>
 </nav>
 
-<div class="flex-grow flex flex-col relative z-10">
+<div class="flex-grow flex flex-col relative z-10 pt-16">
   <main class="container mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow">
 
     <section class="bg-white p-6 rounded-lg shadow-md md:col-span-2 lg:col-span-1">
@@ -98,15 +124,28 @@
       </div>
 
       <form id="resena-form" class="space-y-4">
-        <div>
-          <label for="restaurante" class="block text-sm font-medium">Restaurante</label>
-          <select id="restaurante" class="w-full border p-2 rounded mt-1" required>
-            <option value="">Cargando restaurantes...</option>
-            <!-- Las opciones se cargarán dinámicamente desde Supabase -->
-          </select>
+        <div class="relative">
+          <label for="restaurante-search" class="block text-sm font-medium text-gray-700 mb-1">Restaurante</label>
+          <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-search text-gray-400"></i>
+              </div>
+              <input type="text" id="restaurante-search" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition" placeholder="Busca un restaurante..." autocomplete="off">
+              <!-- Campo oculto para guardar el ID real del restaurante seleccionado -->
+              <input type="hidden" id="restaurante-id" name="restaurante_id" required>
+          </div>
+
+          <!-- Contenedor de sugerencias para la reseña -->
+          <div id="resena-search-suggestions" class="absolute w-full mt-1 bg-white rounded-md shadow-lg overflow-hidden hidden z-30 border border-gray-200">
+            <ul id="resena-search-suggestions-list" class="max-h-60 overflow-y-auto">
+              <!-- Las sugerencias de restaurantes se llenarán con JS -->
+            </ul>
+          </div>
+          <!-- Mensaje de validación -->
+          <p id="restaurante-validation-msg" class="text-red-500 text-xs mt-1 hidden">Por favor, selecciona un restaurante de la lista.</p>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-4 mt-4">
           <!-- CALIDAD DE COMIDA -->
           <div class="flex items-center justify-between">
             <label class="block text-sm font-medium">Calidad de la Comida</label>
@@ -178,10 +217,10 @@
 
         <div>
           <label for="comentario" class="block text-sm font-medium mt-4">Tu comentario</label>
-          <textarea id="comentario" rows="4" class="w-full border p-2 rounded mt-1" placeholder="¿Qué tal estuvo la comida?" required></textarea>
+          <textarea id="comentario" rows="4" class="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition" placeholder="¿Qué tal estuvo la comida?" required></textarea>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full bg-[#c41200] text-white py-2 rounded hover:bg-[#a00e00] transition disabled:opacity-50">
+        <button type="submit" id="submit-btn" class="w-full bg-[#c41200] text-white font-bold py-2 rounded-md hover:bg-[#a00e00] transition shadow-md disabled:opacity-50">
           Publicar Reseña
         </button>
       </form>
@@ -218,11 +257,9 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-gray-700 pb-8">
 
       <!-- Columna 1: Marca y descripción -->
-      <div class="md:col-span-1">
-        <h3 class="text-2xl font-bold text-red-400">TrackEat</h3>
-        <p class="text-gray-400 mt-4 text-sm leading-relaxed">
-          Tu guía de confianza para encontrar las mejores experiencias gastronómicas basadas en opiniones reales.
-        </p>
+      <div class="md:col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
+        <h3 class="text-3xl font-bold text-red-400 mt-[-4px] mb-4">TrackEat</h3>
+        <img src="img/Track Eat (Abajo).png" alt="Logo TrackEat" class="w-24 opacity-80 hover:opacity-100 transition-opacity">
       </div>
 
       <!-- Columna 2: Nosotros -->

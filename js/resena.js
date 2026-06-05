@@ -10,6 +10,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUserId = null; // Variable para almacenar el ID del usuario logueado
 let editReviewId = null; // ID de la reseña a editar (si existe)
+let restaurantesList = []; // Para almacenar todos los restaurantes para la búsqueda
 
 // =========================================================================
 // 2. CARGAR RESTAURANTES DINÁMICAMENTE DESDE LA BASE DE DATOS
@@ -59,11 +60,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
 
-  // ---- Cargar Restaurantes ----
-  const selectRestaurante = document.getElementById('restaurante');
+  // ---- Cargar Restaurantes para el buscador ----
+  const searchInput = document.getElementById('restaurante-search');
+  const suggestionsContainer = document.getElementById('resena-search-suggestions');
+  const suggestionsList = document.getElementById('resena-search-suggestions-list');
 
   if (!supabaseClient) {
-    selectRestaurante.innerHTML = '<option value="">Error al cargar cliente Supabase</option>';
+    searchInput.placeholder = 'Error al cargar cliente Supabase';
+    searchInput.disabled = true;
     return;
   }
 
@@ -75,39 +79,101 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (error) throw error;
 
-    selectRestaurante.innerHTML = '<option value="">Selecciona un restaurante...</option>';
-
     if (restaurantes && restaurantes.length > 0) {
-      restaurantes.forEach(rest => {
-        const option = document.createElement('option');
-        option.value = rest.id;
-        option.textContent = rest.nombre;
-        selectRestaurante.appendChild(option);
-      });
+      restaurantesList = restaurantes;
+      configurarBuscadorRestaurantes(searchInput, suggestionsContainer, suggestionsList);
     } else {
-      selectRestaurante.innerHTML = '<option value="">No se encontraron restaurantes en la BD.</option>';
+      searchInput.placeholder = 'No se encontraron restaurantes en la BD.';
+      searchInput.disabled = true;
     }
 
   } catch (err) {
     console.error('Error al cargar restaurantes:', err);
-    selectRestaurante.innerHTML = '<option value="">Error al cargar la lista.</option>';
+    searchInput.placeholder = 'Error al cargar la lista.';
+    searchInput.disabled = true;
   }
 
   // ---- Cargar datos de la reseña si es modo edición ----
   const urlParams = new URLSearchParams(window.location.search);
   editReviewId = urlParams.get('edit_id');
 
+  // Si venimos con un restaurante pre-seleccionado en la URL (ej: desde restaurante.html)
+  const preSelectedRestauranteId = urlParams.get('restaurante_id');
+  if (preSelectedRestauranteId && !editReviewId && restaurantesList.length > 0) {
+      const rest = restaurantesList.find(r => r.id === preSelectedRestauranteId);
+      if (rest) {
+          seleccionarRestaurante(rest.id, rest.nombre);
+      }
+  }
+
   if (editReviewId && currentUserId) {
     await cargarDatosResena();
   }
 });
+
+// ---- Lógica del Buscador de Restaurantes ----
+function configurarBuscadorRestaurantes(searchInput, suggestionsContainer, suggestionsList) {
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+
+        // Al escribir, borramos el ID seleccionado anteriormente para obligar a seleccionar uno de la lista
+        document.getElementById('restaurante-id').value = '';
+
+        if (query === '') {
+            suggestionsContainer.classList.add('hidden');
+            return;
+        }
+
+        const coincidencias = restaurantesList.filter(r => r.nombre.toLowerCase().includes(query));
+
+        suggestionsList.innerHTML = '';
+
+        if (coincidencias.length === 0) {
+            suggestionsList.innerHTML = '<li class="px-4 py-3 text-gray-500 text-sm">No se encontraron resultados</li>';
+        } else {
+            coincidencias.forEach(rest => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 hover:bg-red-50 cursor-pointer text-gray-800 text-sm transition border-b border-gray-100 last:border-0';
+
+                // Resaltar coincidencia
+                const regex = new RegExp(`(${query})`, "gi");
+                li.innerHTML = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+
+                li.addEventListener('click', () => {
+                    seleccionarRestaurante(rest.id, rest.nombre);
+                    suggestionsContainer.classList.add('hidden');
+                });
+                suggestionsList.appendChild(li);
+            });
+        }
+        suggestionsContainer.classList.remove('hidden');
+    });
+
+    // Cerrar sugerencias al hacer clic fuera
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.classList.add('hidden');
+        }
+    });
+}
+
+function seleccionarRestaurante(id, nombre) {
+    const searchInput = document.getElementById('restaurante-search');
+    const hiddenInput = document.getElementById('restaurante-id');
+    const errorMsg = document.getElementById('restaurante-validation-msg');
+
+    searchInput.value = nombre;
+    hiddenInput.value = id;
+    errorMsg.classList.add('hidden'); // Ocultar error si había
+}
 
 // Función para cargar los datos de una reseña existente en el formulario
 async function cargarDatosResena() {
     try {
         const { data: resena, error } = await supabaseClient
             .from('resenas')
-            .select('*')
+            .select('*, restaurantes(nombre)')
             .eq('id', editReviewId)
             .eq('id_usuario', currentUserId) // Asegurar que sea del usuario actual
             .single();
@@ -131,7 +197,13 @@ async function cargarDatosResena() {
         if (submitBtn) submitBtn.textContent = 'Guardar Cambios';
 
         // Llenar el formulario
-        document.getElementById('restaurante').value = resena.id_restaurante;
+        const restNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante';
+        seleccionarRestaurante(resena.id_restaurante, restNombre);
+
+        // En modo edición, podríamos deshabilitar cambiar de restaurante si queremos
+        // document.getElementById('restaurante-search').disabled = true;
+        // document.getElementById('restaurante-search').classList.add('bg-gray-100');
+
         document.getElementById('comentario').value = resena.comentario;
 
         // Función segura para marcar estrellas
@@ -166,11 +238,22 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  const restauranteId = document.getElementById('restaurante-id').value;
+  const errorMsg = document.getElementById('restaurante-validation-msg');
+
+  // Validación personalizada para el buscador de restaurantes
+  if (!restauranteId) {
+      errorMsg.classList.remove('hidden');
+      document.getElementById('restaurante-search').focus();
+      return;
+  } else {
+      errorMsg.classList.add('hidden');
+  }
+
   const submitBtn = document.getElementById('submit-btn');
   submitBtn.disabled = true;
   submitBtn.textContent = editReviewId ? 'Guardando...' : 'Publicando...';
 
-  const restauranteId = document.getElementById('restaurante').value;
   const comentario = document.getElementById('comentario').value;
 
   // Obtener valores de las estrellas (ahora como floats)
@@ -217,6 +300,7 @@ form.addEventListener('submit', async (e) => {
         if (error) throw error;
         alert("¡Reseña publicada con éxito!");
         form.reset();
+        document.getElementById('restaurante-id').value = ''; // Limpiar campo oculto
         window.location.href = 'index.html';
     }
 
