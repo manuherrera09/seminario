@@ -132,6 +132,14 @@ function renderProfileHeader(profile, followersCount, followingCount) {
         coverPlaceholder.classList.remove('hidden');
     }
 
+    // Biografía
+    const bioContainer = document.getElementById('bio-container');
+    const profileBio = document.getElementById('profile-bio');
+    if (profile.biografia) {
+        profileBio.textContent = profile.biografia;
+        bioContainer.classList.remove('hidden');
+    }
+
     // Foto de perfil
     const profileImage = document.getElementById('profile-image');
     const profileIcon = document.getElementById('profile-icon');
