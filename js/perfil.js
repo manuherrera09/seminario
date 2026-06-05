@@ -120,12 +120,16 @@ function renderProfileHeader(profile, followersCount, followingCount) {
     document.getElementById('profile-email').textContent = profile.email;
     document.querySelector('#profile-email + p').textContent = `Miembro desde: ${new Date(profile.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}`;
 
-    // Biografía
-    const bioContainer = document.getElementById('bio-container');
-    const profileBio = document.getElementById('profile-bio');
-    if (profile.biografia) {
-        profileBio.textContent = profile.biografia;
-        bioContainer.classList.remove('hidden');
+    // Foto de Portada
+    const coverImage = document.getElementById('cover-image');
+    const coverPlaceholder = document.getElementById('cover-placeholder');
+    if (profile.portada_url) {
+        coverImage.src = profile.portada_url;
+        coverImage.classList.remove('hidden');
+        coverPlaceholder.classList.add('hidden');
+    } else {
+        coverImage.classList.add('hidden');
+        coverPlaceholder.classList.remove('hidden');
     }
 
     // Foto de perfil
@@ -408,15 +412,21 @@ function toggleBioEditMode() {
     // Pre-rellenar el formulario
     document.getElementById('bio-edit-textarea').value = document.getElementById('profile-bio').textContent;
     document.getElementById('image-url-input').value = document.getElementById('profile-image').src;
+    document.getElementById('cover-url-input').value = document.getElementById('cover-image').src;
 }
 
 async function saveProfile() {
     const newBio = document.getElementById('bio-edit-textarea').value;
     const newImageUrl = document.getElementById('image-url-input').value;
+    const newCoverUrl = document.getElementById('cover-url-input').value;
 
     const { error } = await supabaseClient
         .from('perfiles')
-        .update({ biografia: newBio, imagen_url: newImageUrl })
+        .update({
+            biografia: newBio,
+            imagen_url: newImageUrl,
+            portada_url: newCoverUrl
+        })
         .eq('id', currentUserId);
 
     if (error) {
@@ -432,6 +442,13 @@ async function saveProfile() {
             document.getElementById('profile-image').classList.remove('hidden');
             document.getElementById('profile-icon').classList.add('hidden');
         }
+
+        if (newCoverUrl) {
+            document.getElementById('cover-image').src = newCoverUrl;
+            document.getElementById('cover-image').classList.remove('hidden');
+            document.getElementById('cover-placeholder').classList.add('hidden');
+        }
+
         toggleBioEditMode();
     }
 }

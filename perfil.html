@@ -51,16 +51,24 @@
 <div class="flex-grow flex flex-col relative z-10">
   <main class="container mx-auto p-6 flex-grow">
 
+    <!-- Contenedor de la Portada -->
+    <div class="h-48 md:h-64 bg-gray-200 rounded-lg mb-[-4rem] md:mb-[-5rem] relative">
+        <img id="cover-image" src="" alt="Foto de portada" class="w-full h-full object-cover rounded-lg hidden">
+        <div id="cover-placeholder" class="w-full h-full flex items-center justify-center">
+            <i class="fas fa-camera text-4xl text-gray-400"></i>
+        </div>
+    </div>
+
     <!-- Encabezado del Perfil -->
     <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative">
 
       <!-- Contenedor de la foto de perfil -->
-      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group mt-2 md:mt-0">
+      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group mt-[-6rem] border-4 border-white">
         <i id="profile-icon" class="fas fa-user"></i>
         <img id="profile-image" src="" alt="Foto de perfil" class="w-full h-full object-cover hidden">
       </div>
 
-      <div class="text-center md:text-left flex-grow">
+      <div class="text-center md:text-left flex-grow pt-4">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
             <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
             <!-- Insignia del usuario -->
@@ -86,6 +94,10 @@
             <div class="mb-3">
                 <label for="image-url-input" class="block text-xs font-semibold text-gray-600 mb-1">URL de la Foto de Perfil (Opcional)</label>
                 <input type="url" id="image-url-input" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/foto.jpg">
+            </div>
+            <div class="mb-3">
+                <label for="cover-url-input" class="block text-xs font-semibold text-gray-600 mb-1">URL de la Foto de Portada (Opcional)</label>
+                <input type="url" id="cover-url-input" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/portada.jpg">
             </div>
 
             <div>
