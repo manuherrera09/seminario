@@ -331,7 +331,12 @@ function renderizarResenas(sortMode) {
         sortedReviews.sort((a, b) => b.puntuacion_general - a.puntuacion_general);
     } else if (sortMode === 'peores') {
         sortedReviews.sort((a, b) => a.puntuacion_general - b.puntuacion_general);
-    } // si es 'recientes', ya viene ordenado de BD.
+    } else if (sortMode === 'antiguas') {
+        sortedReviews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    } else {
+        // 'recientes' (por defecto)
+        sortedReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 
     sortedReviews.forEach(resena => {
         const fechaObj = new Date(resena.created_at);

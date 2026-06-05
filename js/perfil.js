@@ -1,6 +1,8 @@
 // supabaseClient and currentUserId are now global, provided by app.js
 let viewedUserId = null;
 let allUserRestaurants = []; // Cache for favorite restaurants editing
+let allUserReviews = []; // Cache for user's reviews
+let allUserVotes = []; // Cache for votes on those reviews
 
 // =========================================================================
 // 2. INICIALIZACIÓN DE LA PÁGINA
@@ -24,6 +26,14 @@ function initProfilePage() {
 
     // Configurar listeners de los botones de edición y modales
     setupEventListeners();
+
+    // Configurar filtro de reseñas
+    const sortReviews = document.getElementById('sort-reviews');
+    if (sortReviews) {
+        sortReviews.addEventListener('change', (e) => {
+            renderUserReviews(e.target.value);
+        });
+    }
 }
 
 // Escuchar el evento personalizado desde app.js o ejecutar directamente si ya está listo
@@ -41,7 +51,7 @@ async function loadProfileData() {
         // Cargar perfil, reseñas, seguidores y seguidos en paralelo
         const [profileRes, reviewsRes, followersRes, followingRes] = await Promise.all([
             supabaseClient.from('perfiles').select('*').eq('id', viewedUserId).single(),
-            supabaseClient.from('resenas').select('*, restaurantes(id, nombre)').eq('id_usuario', viewedUserId).order('created_at', { ascending: false }),
+            supabaseClient.from('resenas').select('*, restaurantes(id, nombre)').eq('id_usuario', viewedUserId),
             supabaseClient.from('follows').select('follower_id', { count: 'exact' }).eq('following_id', viewedUserId),
             supabaseClient.from('follows').select('following_id', { count: 'exact' }).eq('follower_id', viewedUserId)
         ]);
@@ -58,24 +68,23 @@ async function loadProfileData() {
 
         renderProfileHeader(profile, followersCount, followingCount);
 
-        // --- Renderizar Reseñas ---
+        // --- Cargar y Guardar Reseñas y Votos en caché ---
         if (reviewsRes.error) throw reviewsRes.error;
-        const reviews = reviewsRes.data || [];
+        allUserReviews = reviewsRes.data || [];
 
-        // Obtener los votos para las reseñas cargadas
-        const reviewIds = reviews.map(r => r.id);
-        let allVotes = [];
+        const reviewIds = allUserReviews.map(r => r.id);
         if (reviewIds.length > 0) {
             const { data: votesData, error: votesError } = await supabaseClient
                 .from('resenas_votos')
                 .select('resena_id, usuario_id, tipo')
                 .in('resena_id', reviewIds);
             if (votesError) throw votesError;
-            allVotes = votesData;
+            allUserVotes = votesData;
         }
 
-        renderUserReviews(reviews, allVotes);
-        document.getElementById('stats-resenas').textContent = reviews.length;
+        // Renderizar por primera vez (orden por defecto)
+        renderUserReviews('recientes');
+        document.getElementById('stats-resenas').textContent = allUserReviews.length;
 
         // --- Lógica de Botones (Seguir/Editar) ---
         const { data: isFollowingData, error: isFollowingError } = await supabaseClient
@@ -158,20 +167,36 @@ function renderProfileHeader(profile, followersCount, followingCount) {
     document.getElementById('stats-seguidos').textContent = followingCount;
 }
 
-function renderUserReviews(reviews, allVotes) {
+function renderUserReviews(sortMode = 'recientes') {
     const container = document.getElementById('mis-resenas');
     const emptyMsg = document.getElementById('mis-resenas-vacio');
 
-    if (!reviews || reviews.length === 0) {
-        emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
-        emptyMsg.classList.remove('hidden');
+    if (!allUserReviews || allUserReviews.length === 0) {
+        if (emptyMsg) {
+            emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
+            emptyMsg.classList.remove('hidden');
+        }
+        if (container) container.innerHTML = ''; // Limpiar por si había algo
         return;
     }
 
-    emptyMsg.classList.add('hidden');
-    container.innerHTML = ''; // Limpiar
+    if (emptyMsg) emptyMsg.classList.add('hidden');
+    if (container) container.innerHTML = ''; // Limpiar
 
-    reviews.forEach(review => {
+    let sortedReviews = [...allUserReviews];
+
+    if (sortMode === 'mejores') {
+        sortedReviews.sort((a, b) => b.puntuacion_general - a.puntuacion_general);
+    } else if (sortMode === 'peores') {
+        sortedReviews.sort((a, b) => a.puntuacion_general - b.puntuacion_general);
+    } else if (sortMode === 'antiguas') {
+        sortedReviews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    } else {
+        // 'recientes' (por defecto)
+        sortedReviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    sortedReviews.forEach(review => {
         const reviewEl = document.createElement('div');
         reviewEl.className = 'border-b last:border-b-0 pb-4 mb-4';
         reviewEl.setAttribute('data-review-id', review.id); // ID para poder eliminarlo del DOM
@@ -180,7 +205,7 @@ function renderUserReviews(reviews, allVotes) {
         const restaurantId = review.restaurantes ? review.restaurantes.id : null;
 
         // Lógica de votos
-        const reviewVotes = allVotes.filter(v => v.resena_id === review.id);
+        const reviewVotes = allUserVotes.filter(v => v.resena_id === review.id);
         const likesCount = reviewVotes.filter(v => v.tipo === 'like').length;
         const dislikesCount = reviewVotes.filter(v => v.tipo === 'dislike').length;
         const userVote = currentUserId ? reviewVotes.find(v => v.usuario_id === currentUserId)?.tipo : null;
@@ -224,7 +249,7 @@ function renderUserReviews(reviews, allVotes) {
                 </div>
             </div>
         `;
-        container.appendChild(reviewEl);
+        if (container) container.appendChild(reviewEl);
     });
 
     // Re-configurar los listeners de los botones de voto
@@ -266,6 +291,7 @@ async function loadFavoriteRestaurants(favIds) {
 // =========================================================================
 // 5. MANEJO DE EVENTOS Y ACCIONES
 // =========================================================================
+
 async function handleDeleteReview(reviewId) {
     const isConfirmed = confirm('¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer.');
 
@@ -288,24 +314,16 @@ async function handleDeleteReview(reviewId) {
 
             if (reviewError) throw reviewError;
 
-            // Eliminar la reseña del DOM para una respuesta visual inmediata
-            const reviewElement = document.querySelector(`[data-review-id='${reviewId}']`);
-            if (reviewElement) {
-                reviewElement.remove();
-            }
+            // Eliminar la reseña de la caché local
+            allUserReviews = allUserReviews.filter(r => r.id !== reviewId);
+
+            // Volver a renderizar
+            const sortMode = document.getElementById('sort-reviews').value;
+            renderUserReviews(sortMode);
 
             // Actualizar el contador de reseñas
             const statsResenas = document.getElementById('stats-resenas');
-            const currentCount = parseInt(statsResenas.textContent);
-            statsResenas.textContent = currentCount - 1;
-
-            // Si ya no quedan reseñas, mostrar el mensaje de vacío
-            const container = document.getElementById('mis-resenas');
-            if (container.childElementCount === 0) {
-                const emptyMsg = document.getElementById('mis-resenas-vacio');
-                emptyMsg.textContent = 'Este usuario aún no ha escrito ninguna reseña.';
-                emptyMsg.classList.remove('hidden');
-            }
+            statsResenas.textContent = allUserReviews.length;
 
             alert('Reseña eliminada correctamente.');
 
@@ -322,23 +340,27 @@ function setupEventListeners() {
     const saveBioBtn = document.getElementById('save-bio-btn');
     const cancelBioBtn = document.getElementById('cancel-bio-btn');
 
-    editProfileBtn.addEventListener('click', toggleBioEditMode);
-    saveBioBtn.addEventListener('click', saveProfile);
-    cancelBioBtn.addEventListener('click', toggleBioEditMode);
+    if (editProfileBtn) editProfileBtn.addEventListener('click', toggleBioEditMode);
+    if (saveBioBtn) saveBioBtn.addEventListener('click', saveProfile);
+    if (cancelBioBtn) cancelBioBtn.addEventListener('click', toggleBioEditMode);
 
     // --- Edición de Restaurantes Favoritos ---
     const editFavsBtn = document.getElementById('edit-favs-btn');
     const saveFavsBtn = document.getElementById('save-favs-btn');
     const cancelFavsBtn = document.getElementById('cancel-favs-btn');
 
-    editFavsBtn.addEventListener('click', toggleFavsEditMode);
-    saveFavsBtn.addEventListener('click', saveFavoriteRestaurants);
-    cancelFavsBtn.addEventListener('click', toggleFavsEditMode);
+    if (editFavsBtn) editFavsBtn.addEventListener('click', toggleFavsEditMode);
+    if (saveFavsBtn) saveFavsBtn.addEventListener('click', saveFavoriteRestaurants);
+    if (cancelFavsBtn) cancelFavsBtn.addEventListener('click', toggleFavsEditMode);
 
     // --- Modal de Seguidores/Seguidos ---
-    document.getElementById('followers-container').addEventListener('click', () => openFollowsModal('seguidores'));
-    document.getElementById('following-container').addEventListener('click', () => openFollowsModal('seguidos'));
-    document.getElementById('close-follows-modal').addEventListener('click', closeFollowsModal);
+    const followersContainer = document.getElementById('followers-container');
+    const followingContainer = document.getElementById('following-container');
+    const closeModalBtn = document.getElementById('close-follows-modal');
+
+    if (followersContainer) followersContainer.addEventListener('click', () => openFollowsModal('seguidores'));
+    if (followingContainer) followingContainer.addEventListener('click', () => openFollowsModal('seguidos'));
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeFollowsModal);
 }
 
 function setupActionButtons(isFollowing) {
@@ -348,18 +370,18 @@ function setupActionButtons(isFollowing) {
 
     if (currentUserId === viewedUserId) {
         // Es mi perfil
-        editProfileBtn.classList.remove('hidden');
-        editFavsBtn.classList.remove('hidden');
-        followBtn.classList.add('hidden');
+        if (editProfileBtn) editProfileBtn.classList.remove('hidden');
+        if (editFavsBtn) editFavsBtn.classList.remove('hidden');
+        if (followBtn) followBtn.classList.add('hidden');
     } else {
         // Es el perfil de otro
-        editProfileBtn.classList.add('hidden');
-        editFavsBtn.classList.add('hidden');
-        followBtn.classList.remove('hidden');
-
-        updateFollowButton(isFollowing);
-
-        followBtn.addEventListener('click', toggleFollow);
+        if (editProfileBtn) editProfileBtn.classList.add('hidden');
+        if (editFavsBtn) editFavsBtn.classList.add('hidden');
+        if (followBtn) {
+            followBtn.classList.remove('hidden');
+            updateFollowButton(isFollowing);
+            followBtn.addEventListener('click', toggleFollow);
+        }
     }
 }
 
