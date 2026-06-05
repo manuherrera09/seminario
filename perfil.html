@@ -202,13 +202,14 @@
     </div>
 </div>
 
-<footer class="bg-gray-800 text-white pt-12 pb-8 mt-12 relative z-10">
+<footer class="bg-gray-800 text-white pt-12 pb-6 mt-12">
   <div class="container mx-auto px-6">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-gray-700 pb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 border-b border-gray-700 pb-8">
 
-      <!-- Columna 1: Marca -->
-      <div class="md:col-span-1 flex items-start">
-        <h3 class="text-3xl font-bold text-red-400 mt-[-4px]">TrackEat</h3>
+      <!-- Columna 1: Marca y Logo -->
+      <div class="md:col-span-1 flex flex-col items-start">
+        <h3 class="text-3xl font-bold text-red-400 mt-[-4px] mb-4">TrackEat</h3>
+        <img src="img/Track Eat (Abajo).png" alt="Logo TrackEat" class="w-24 opacity-80 hover:opacity-100 transition-opacity">
       </div>
 
       <!-- Columna 2: Nosotros -->
@@ -245,18 +246,30 @@
         </ul>
       </div>
 
+      <!-- Columna 5: Redes -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Síguenos en nuestras redes</h4>
+        <div class="flex space-x-5">
+          <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-instagram"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Instagram</span>
+          </a>
+          <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-twitter"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Twitter</span>
+          </a>
+          <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-2xl flex flex-col items-center group">
+            <i class="fa-brands fa-tiktok"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">TikTok</span>
+          </a>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Redes Sociales y Copyright -->
-    <div class="mt-8 flex flex-col md:flex-row justify-between items-center">
-      <div class="text-gray-500 text-sm mb-4 md:mb-0">
-        &copy; 2026 TrackEat. Todos los derechos reservados.
-      </div>
-      <div class="flex space-x-6">
-        <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-xl"><i class="fab fa-instagram"></i></a>
-        <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-xl"><i class="fab fa-twitter"></i></a>
-        <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-tiktok"></i></a>
-      </div>
+    <!-- Copyright (Centrado) -->
+    <div class="mt-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
     </div>
   </div>
 </footer>

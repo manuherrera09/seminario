@@ -86,6 +86,9 @@ async function loadProfileData() {
         renderUserReviews('recientes');
         document.getElementById('stats-resenas').textContent = allUserReviews.length;
 
+        // Calcular y mostrar la insignia del usuario
+        calcularYMostrarInsignia(allUserReviews.length);
+
         // --- Lógica de Botones (Seguir/Editar) ---
         const { data: isFollowingData, error: isFollowingError } = await supabaseClient
             .from('follows')
@@ -292,6 +295,36 @@ async function loadFavoriteRestaurants(favIds) {
 // 5. MANEJO DE EVENTOS Y ACCIONES
 // =========================================================================
 
+function calcularYMostrarInsignia(reviewCount) {
+    const badgeContainer = document.getElementById('user-badge-container');
+    const badge = document.getElementById('user-badge');
+    if (!badge || !badgeContainer) return;
+
+    let insignia = { texto: 'Novato', color: 'bg-gray-100', icono: 'fa-concierge-bell' };
+
+    if (reviewCount >= 200) {
+        insignia = { texto: 'Referente TrackEat', color: 'bg-black text-white', icono: 'fa-trophy' };
+    } else if (reviewCount >= 151) {
+        insignia = { texto: 'Gurú Gastronómico', color: 'bg-purple-600 text-white', icono: 'fa-crown' };
+    } else if (reviewCount >= 100) {
+        insignia = { texto: 'Crítico Reconocido', color: 'bg-yellow-400 text-yellow-900', icono: 'fa-star' };
+    } else if (reviewCount >= 60) {
+        insignia = { texto: 'Comensal Experto', color: 'bg-red-500 text-white', icono: 'fa-fire' };
+    } else if (reviewCount >= 30) {
+        insignia = { texto: 'Crítico Amateur', color: 'bg-orange-400 text-white', icono: 'fa-pen-nib' };
+    } else if (reviewCount >= 15) {
+        insignia = { texto: 'Crítico Emergente', color: 'bg-blue-400 text-white', icono: 'fa-lightbulb' };
+    } else if (reviewCount >= 5) {
+        insignia = { texto: 'Explorador Gastronómico', color: 'bg-green-500 text-white', icono: 'fa-map-signs' };
+    } else if (reviewCount >= 1) {
+        insignia = { texto: 'Nuevo Comensal', color: 'bg-green-200 text-green-800', icono: 'fa-utensils' };
+    }
+
+    badge.className = `text-xs px-3 py-1 rounded-full font-semibold border ${insignia.color}`;
+    badge.innerHTML = `<i class="fas ${insignia.icono} mr-1"></i> ${insignia.texto}`;
+    badgeContainer.classList.remove('hidden');
+}
+
 async function handleDeleteReview(reviewId) {
     const isConfirmed = confirm('¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer.');
 
@@ -321,9 +354,10 @@ async function handleDeleteReview(reviewId) {
             const sortMode = document.getElementById('sort-reviews').value;
             renderUserReviews(sortMode);
 
-            // Actualizar el contador de reseñas
-            const statsResenas = document.getElementById('stats-resenas');
-            statsResenas.textContent = allUserReviews.length;
+            // Actualizar el contador de reseñas y la insignia
+            const newCount = allUserReviews.length;
+            document.getElementById('stats-resenas').textContent = newCount;
+            calcularYMostrarInsignia(newCount);
 
             alert('Reseña eliminada correctamente.');
 
