@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data: restaurantes, error } = await supabaseClient
       .from('restaurantes')
-      .select('id, nombre')
+      .select('id, nombre, direccion')
       .order('nombre', { ascending: true });
 
     if (error) throw error;
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (preSelectedRestauranteId && !editReviewId && restaurantesList.length > 0) {
       const rest = restaurantesList.find(r => r.id === preSelectedRestauranteId);
       if (rest) {
-          seleccionarRestaurante(rest.id, rest.nombre);
+          seleccionarRestaurante(rest.id, `${rest.nombre} - ${rest.direccion}`);
       }
   }
 
@@ -125,7 +125,7 @@ function configurarBuscadorRestaurantes(searchInput, suggestionsContainer, sugge
             return;
         }
 
-        const coincidencias = restaurantesList.filter(r => r.nombre.toLowerCase().includes(query));
+        const coincidencias = restaurantesList.filter(r => r.nombre.toLowerCase().includes(query) || r.direccion.toLowerCase().includes(query));
 
         suggestionsList.innerHTML = '';
 
@@ -137,11 +137,12 @@ function configurarBuscadorRestaurantes(searchInput, suggestionsContainer, sugge
                 li.className = 'px-4 py-2 hover:bg-red-50 cursor-pointer text-gray-800 text-sm transition border-b border-gray-100 last:border-0';
 
                 // Resaltar coincidencia
+                const displayText = `${rest.nombre} - ${rest.direccion}`;
                 const regex = new RegExp(`(${query})`, "gi");
-                li.innerHTML = rest.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
+                li.innerHTML = displayText.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
 
                 li.addEventListener('click', () => {
-                    seleccionarRestaurante(rest.id, rest.nombre);
+                    seleccionarRestaurante(rest.id, displayText);
                     suggestionsContainer.classList.add('hidden');
                 });
                 suggestionsList.appendChild(li);
@@ -173,7 +174,7 @@ async function cargarDatosResena() {
     try {
         const { data: resena, error } = await supabaseClient
             .from('resenas')
-            .select('*, restaurantes(nombre)')
+            .select('*, restaurantes(nombre, direccion)')
             .eq('id', editReviewId)
             .eq('id_usuario', currentUserId) // Asegurar que sea del usuario actual
             .single();
@@ -197,8 +198,8 @@ async function cargarDatosResena() {
         if (submitBtn) submitBtn.textContent = 'Guardar Cambios';
 
         // Llenar el formulario
-        const restNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante';
-        seleccionarRestaurante(resena.id_restaurante, restNombre);
+        const restDisplayText = resena.restaurantes ? `${resena.restaurantes.nombre} - ${resena.restaurantes.direccion}` : 'Restaurante';
+        seleccionarRestaurante(resena.id_restaurante, restDisplayText);
 
         // En modo edición, podríamos deshabilitar cambiar de restaurante si queremos
         // document.getElementById('restaurante-search').disabled = true;
