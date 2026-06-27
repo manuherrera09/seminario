@@ -53,6 +53,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// =========================================================================
+// 2. FUNCIONES DE UTILIDAD (Texto a Voz)
+// =========================================================================
+/**
+ * Lee en voz alta el texto proporcionado. Detiene cualquier lectura anterior.
+ * @param {string} texto - El texto a leer.
+ */
+function leerResena(texto) {
+  // Detener cualquier lectura en curso para evitar solapamientos
+  window.speechSynthesis.cancel();
+
+  // Crear un nuevo objeto de enunciado
+  const enunciado = new SpeechSynthesisUtterance(texto);
+  enunciado.lang = 'es-ES'; // Establecer el idioma a español
+
+  // Iniciar la lectura
+  window.speechSynthesis.speak(enunciado);
+}
+
+
 async function configurarNavegacionAutenticada() {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
 
@@ -550,7 +570,12 @@ async function cargarResenasRecientes() {
             <a href="restaurante.html?id=${restauranteId}" class="font-bold text-lg text-gray-800 hover:text-[#c41200] hover:underline transition">${restauranteNombre}</a>
             <p class="text-sm text-gray-500 mt-1">Por <a href="perfil.html?id=${usuarioId}" class="font-semibold text-gray-600 hover:text-[#c41200] hover:underline transition">${usuarioNombre}</a></p>
           </div>
-          <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
+          <div class="flex items-center gap-3">
+            <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
+            <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+                <i class="fas fa-volume-up"></i>
+            </button>
+          </div>
         </div>
         <p class="text-gray-700 mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
         <div class="text-xs text-gray-500 flex items-center justify-between mt-auto pt-4 border-t border-gray-100 mb-3">

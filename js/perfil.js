@@ -236,7 +236,12 @@ function renderUserReviews(sortMode = 'recientes') {
                     <h4 class="font-bold text-lg hover:text-[#c41200] cursor-pointer" onclick="window.location.href='restaurante.html?id=${restaurantId}'">${restaurantName}</h4>
                     <p class="text-xs text-gray-400">${new Date(review.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
-                <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
+                    <button onclick="leerResena('${review.comentario.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
             </div>
             <p class="text-gray-600 text-sm mb-2">"${review.comentario}"</p>
 
