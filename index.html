@@ -9,6 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- Estilos del Modo Oscuro -->
+  <link rel="stylesheet" href="css/dark-mode.css">
+  <!-- Font Awesome para los iconos de redes sociales -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
@@ -25,9 +30,6 @@
       }
     }
   </script>
-  <!-- Font Awesome para los iconos de redes sociales -->
-  <!--suppress HtmlUnknownTarget -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* Estilos básicos para el carrusel de fondo */
     .bg-carousel {
@@ -77,12 +79,13 @@
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
     input:-webkit-autofill:active {
-        -webkit-box-shadow: 0 0 0 30px white inset !important;
-        box-shadow: 0 0 0 30px white inset !important;
+        -webkit-box-shadow: 0 0 0 30px var(--color-surface) inset !important;
+        box-shadow: 0 0 0 30px var(--color-surface) inset !important;
+        -webkit-text-fill-color: var(--color-text-primary) !important;
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+<body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
 
 <!-- NAVBAR -->
 <nav class="bg-[#c41200] p-4 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
@@ -127,15 +130,15 @@
 
       <!-- Barra de Búsqueda Estilo Píldora -->
       <div class="max-w-2xl mx-auto relative group">
-        <div class="relative bg-white rounded-full shadow-2xl flex items-center p-2 border-4 border-white/20 transition-all duration-300 focus-within:border-white/50 focus-within:shadow-[0_0_30px_rgba(196,18,0,0.3)]">
-          <div class="pl-5 text-gray-400 text-xl">
+        <div class="relative bg-[var(--color-surface)] rounded-full shadow-2xl flex items-center p-2 border-4 border-white/20 transition-all duration-300 focus-within:border-white/50 focus-within:shadow-[0_0_30px_rgba(196,18,0,0.3)]">
+          <div class="pl-5 text-[var(--color-text-secondary)] text-xl">
               <i class="fas fa-search"></i>
           </div>
-          <input type="text" id="search-input" class="w-full py-3 pl-4 pr-4 bg-transparent text-gray-800 focus:outline-none text-lg placeholder-gray-400" placeholder="Busca un restaurante o un usuario...">
+          <input type="text" id="search-input" class="w-full py-3 pl-4 pr-4 bg-transparent text-[var(--color-text-primary)] focus:outline-none text-lg placeholder-[var(--color-text-secondary)]" placeholder="Busca un restaurante o un usuario...">
         </div>
 
         <!-- Contenedor de sugerencias -->
-        <div id="search-suggestions" class="absolute w-full mt-3 bg-white rounded-2xl shadow-2xl overflow-hidden hidden z-20 text-left border border-gray-100">
+        <div id="search-suggestions" class="absolute w-full mt-3 bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden hidden z-20 text-left border border-[var(--color-border)]">
           <ul id="suggestions-list" class="max-h-72 overflow-y-auto">
             <!-- Las sugerencias se llenarán con JS -->
           </ul>
@@ -148,26 +151,26 @@
 <main class="container mx-auto p-6 flex-grow">
   <!-- Sección de Sugerencias (inicialmente oculta) -->
   <section id="sugerencias-section" class="mt-12 hidden">
-    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-l-4 border-[#c41200] pl-4">Sugerencias para vos</h2>
+    <h2 class="text-3xl font-bold mb-8 text-[var(--color-text-primary)] border-l-4 border-[#c41200] pl-4">Sugerencias para vos</h2>
     <div class="sugerencias-container flex space-x-6 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar">
       <!-- El contenido se generará con JS -->
     </div>
   </section>
 
   <section class="mt-12">
-    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-l-4 border-[#c41200] pl-4">Tendencias de la Semana</h2>
+    <h2 class="text-3xl font-bold mb-8 text-[var(--color-text-primary)] border-l-4 border-[#c41200] pl-4">Tendencias de la Semana</h2>
 
     <!-- Contenedor de diseño asimétrico Bento Grid -->
     <div class="tendencias-container">
-      <p class="text-gray-500 w-full text-center py-8">Cargando tendencias...</p>
+      <p class="text-[var(--color-text-secondary)] w-full text-center py-8">Cargando tendencias...</p>
     </div>
   </section>
 
   <section class="mt-16">
-    <h2 class="text-3xl font-bold mb-8 text-gray-800 border-l-4 border-[#c41200] pl-4">Reseñas Recientes</h2>
+    <h2 class="text-3xl font-bold mb-8 text-[var(--color-text-primary)] border-l-4 border-[#c41200] pl-4">Reseñas Recientes</h2>
 
     <div id="recent-reviews-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <p class="text-gray-500 col-span-full text-center py-8">Cargando reseñas recientes...</p>
+      <p class="text-[var(--color-text-secondary)] col-span-full text-center py-8">Cargando reseñas recientes...</p>
     </div>
   </section>
 </main>

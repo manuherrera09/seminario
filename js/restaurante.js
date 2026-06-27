@@ -152,10 +152,10 @@ async function cargarDetallesRestaurante() {
         if (restaurante.url_website && restaurante.url_website.trim() !== '') {
             hasLinks = true;
             linksContainer.innerHTML += `
-                <a href="${restaurante.url_website}" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-700 hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
+                <a href="${restaurante.url_website}" target="_blank" rel="noopener noreferrer" class="flex items-center text-[var(--color-text-primary)] hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
                     <div class="w-8 flex justify-center"><i class="fas fa-globe text-xl text-blue-500"></i></div>
                     <span class="ml-2 font-medium">Sitio Web Oficial</span>
-                    <i class="fas fa-external-link-alt ml-auto text-xs text-gray-400"></i>
+                    <i class="fas fa-external-link-alt ml-auto text-xs text-[var(--color-text-secondary)]"></i>
                 </a>
             `;
         }
@@ -163,10 +163,10 @@ async function cargarDetallesRestaurante() {
         if (restaurante.url_ig && restaurante.url_ig.trim() !== '') {
             hasLinks = true;
             linksContainer.innerHTML += `
-                <a href="${restaurante.url_ig}" target="_blank" rel="noopener noreferrer" class="flex items-center text-gray-700 hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
+                <a href="${restaurante.url_ig}" target="_blank" rel="noopener noreferrer" class="flex items-center text-[var(--color-text-primary)] hover:text-[#c41200] transition p-2 hover:bg-red-50 rounded-lg">
                     <div class="w-8 flex justify-center"><i class="fab fa-instagram text-2xl text-pink-600"></i></div>
                     <span class="ml-2 font-medium">Instagram</span>
-                    <i class="fas fa-external-link-alt ml-auto text-xs text-gray-400"></i>
+                    <i class="fas fa-external-link-alt ml-auto text-xs text-[var(--color-text-secondary)]"></i>
                 </a>
             `;
         }
@@ -289,15 +289,15 @@ function calcularYMostrarPromedios() {
     // Buscar si ya existe el bar de ambiente en el DOM, si no, lo agregamos dinámicamente
     let barAmbiente = document.getElementById('bar-ambiente');
     if (!barAmbiente && ambienteCount > 0) {
-        const divInfo = document.querySelector('.bg-white.p-6.rounded-lg.shadow-md .space-y-4');
+        const divInfo = document.querySelector('.bg-\\[var\\(--color-surface\\)\\] .space-y-4');
         if (divInfo) {
             divInfo.innerHTML += `
                 <div>
                    <div class="flex justify-between text-sm mb-1">
-                       <span class="font-medium text-gray-700">Ambiente</span>
+                       <span class="font-medium text-[var(--color-text-primary)]">Ambiente</span>
                        <span class="font-bold" id="rating-ambiente">${avgAmbiente} ★</span>
                    </div>
-                   <div class="w-full bg-gray-200 rounded-full h-2">
+                   <div class="w-full bg-[var(--color-surface-secondary)] rounded-full h-2">
                        <div class="bg-yellow-400 h-2 rounded-full" id="bar-ambiente" style="width: ${(avgAmbiente / 5) * 100}%"></div>
                    </div>
                </div>
@@ -315,10 +315,10 @@ function renderizarResenas(sortMode) {
 
     if (allReviews.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-10 bg-gray-50 rounded-lg border border-gray-100">
-                <i class="fas fa-comment-slash text-4xl text-gray-300 mb-3"></i>
-                <p class="text-gray-500">Aún no hay reseñas para este restaurante.</p>
-                <p class="text-sm text-gray-400 mt-1">¡Sé el primero en compartir tu experiencia!</p>
+            <div class="text-center py-10 bg-[var(--color-surface-secondary)] rounded-lg border border-[var(--color-border)]">
+                <i class="fas fa-comment-slash text-4xl text-[var(--color-text-secondary)] mb-3"></i>
+                <p class="text-[var(--color-text-secondary)]">Aún no hay reseñas para este restaurante.</p>
+                <p class="text-sm text-[var(--color-text-secondary)] mt-1">¡Sé el primero en compartir tu experiencia!</p>
             </div>
         `;
         return;
@@ -375,7 +375,7 @@ function renderizarResenas(sortMode) {
 
         let extraRatingsHTML = '';
         if (resena.ambiente) {
-            extraRatingsHTML = `<span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-music text-gray-400"></i> ${resena.ambiente}/5</span>`;
+            extraRatingsHTML = `<span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-music text-[var(--color-text-secondary)]"></i> ${resena.ambiente}/5</span>`;
         }
 
         // Lógica de botones de like/dislike visuales
@@ -383,7 +383,7 @@ function renderizarResenas(sortMode) {
         const dislikeClass = resena.userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
         const divResena = document.createElement('div');
-        divResena.className = "border-b border-gray-100 last:border-b-0 pb-6 last:pb-0";
+        divResena.className = "border-b border-[var(--color-border)] last:border-b-0 pb-6 last:pb-0";
 
         divResena.innerHTML = `
             <div class="flex justify-between items-start mb-3">
@@ -392,22 +392,27 @@ function renderizarResenas(sortMode) {
                         ${nombreAutor.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <h4 class="font-bold text-gray-800 cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
-                        <p class="text-xs text-gray-500">${fechaFormateada}</p>
+                        <h4 class="font-bold text-[var(--color-text-primary)] cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
+                        <p class="text-xs text-[var(--color-text-secondary)]">${fechaFormateada}</p>
                     </div>
                 </div>
-                <div class="flex text-sm bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                    ${starsHtml}
+                <div class="flex items-center gap-3">
+                    <div class="flex text-sm bg-[var(--color-surface-secondary)] px-2 py-1 rounded-md border border-[var(--color-border)]">
+                        ${starsHtml}
+                    </div>
+                    <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
                 </div>
             </div>
 
-            <p class="text-gray-700 text-sm mb-3 bg-white p-2 rounded">${resena.comentario}</p>
+            <p class="text-[var(--color-text-primary)] text-sm mb-3 bg-[var(--color-surface)] p-2 rounded">${resena.comentario}</p>
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex gap-4 text-xs text-gray-500 flex-wrap">
-                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-utensils text-gray-400"></i> ${resena.calidad_comida}/5</span>
-                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-concierge-bell text-gray-400"></i> ${resena.atencion}/5</span>
-                    <span class="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-gray-400"></i> ${resena.precio}/5</span>
+                <div class="flex gap-4 text-xs text-[var(--color-text-secondary)] flex-wrap">
+                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-utensils text-[var(--color-text-secondary)]"></i> ${resena.calidad_comida}/5</span>
+                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-concierge-bell text-[var(--color-text-secondary)]"></i> ${resena.atencion}/5</span>
+                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-[var(--color-text-secondary)]"></i> ${resena.precio}/5</span>
                     ${extraRatingsHTML}
                 </div>
 

@@ -1,0 +1,34 @@
+/* css/dark-mode.css */
+
+/* 1. Definición de variables de color para el modo claro (por defecto) */
+:root {
+  --color-background: #f9fafb; /* gray-50 */
+  --color-surface: #ffffff;    /* white */
+  --color-surface-secondary: #f3f4f6; /* gray-100 */
+  --color-text-primary: #1f2937;  /* gray-800 */
+  --color-text-secondary: #6b7280; /* gray-500 */
+  --color-border: #e5e7eb;       /* gray-200 */
+  --color-brand: #c41200;
+  --color-brand-hover: #a00e00;
+  --color-brand-text: #ffffff;
+}
+
+/* 2. Redefinición de variables para el modo oscuro cuando el body tiene la clase .dark */
+body.dark {
+  --color-background: #111827; /* gray-900 */
+  --color-surface: #1f2937;    /* gray-800 */
+  --color-surface-secondary: #374151; /* gray-700 */
+  --color-text-primary: #f9fafb;  /* gray-50 */
+  --color-text-secondary: #9ca3af; /* gray-400 */
+  --color-border: #374151;       /* gray-700 */
+  /* La marca se mantiene igual, pero podrías ajustarla si quisieras */
+  /* --color-brand: #...; */
+}
+
+/* 3. Aplicación de estilos base usando las variables */
+/* Esto asegura que los elementos principales respondan al cambio de tema */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}

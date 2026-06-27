@@ -26,13 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Buscamos su info
     const { data: perfilData } = await supabaseClient
       .from('perfiles')
-      .select('nombre_usuario')
+      .select('nombre_usuario, modo_oscuro')
       .eq('id', currentUserId)
       .single();
 
     let userDisplayName = session.user.email;
     if (perfilData && perfilData.nombre_usuario) {
       userDisplayName = perfilData.nombre_usuario;
+    }
+
+    // Aplicar el modo oscuro globalmente
+    if (perfilData && perfilData.modo_oscuro) {
+        document.body.classList.add('dark');
     }
 
     // Actualizamos nav
@@ -130,11 +135,11 @@ function configurarBuscadorRestaurantes(searchInput, suggestionsContainer, sugge
         suggestionsList.innerHTML = '';
 
         if (coincidencias.length === 0) {
-            suggestionsList.innerHTML = '<li class="px-4 py-3 text-gray-500 text-sm">No se encontraron resultados</li>';
+            suggestionsList.innerHTML = '<li class="px-4 py-3 text-[var(--color-text-secondary)] text-sm">No se encontraron resultados</li>';
         } else {
             coincidencias.forEach(rest => {
                 const li = document.createElement('li');
-                li.className = 'px-4 py-2 hover:bg-red-50 cursor-pointer text-gray-800 text-sm transition border-b border-gray-100 last:border-0';
+                li.className = 'px-4 py-2 hover:bg-red-50 cursor-pointer text-[var(--color-text-primary)] text-sm transition border-b border-[var(--color-border)] last:border-0';
 
                 // Resaltar coincidencia
                 const displayText = `${rest.nombre} - ${rest.direccion}`;

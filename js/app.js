@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =========================================================================
-// 2. FUNCIONES DE UTILIDAD (Texto a Voz)
+// 2. FUNCIONES DE UTILIDAD (Texto a Voz y Modo Oscuro)
 // =========================================================================
 /**
  * Lee en voz alta el texto proporcionado. Detiene cualquier lectura anterior.
@@ -72,6 +72,18 @@ function leerResena(texto) {
   window.speechSynthesis.speak(enunciado);
 }
 
+/**
+ * Aplica el modo oscuro si está guardado en el perfil del usuario.
+ * @param {object} perfil - El objeto de perfil del usuario.
+ */
+function aplicarModoOscuro(perfil) {
+    if (perfil && perfil.modo_oscuro) {
+        document.body.classList.add('dark');
+    } else {
+        document.body.classList.remove('dark');
+    }
+}
+
 
 async function configurarNavegacionAutenticada() {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -82,7 +94,7 @@ async function configurarNavegacionAutenticada() {
         // Buscamos su información en la tabla perfiles
         const { data: perfilData } = await supabaseClient
             .from('perfiles')
-            .select('nombre_usuario')
+            .select('nombre_usuario, modo_oscuro')
             .eq('id', session.user.id)
             .single();
 
@@ -90,6 +102,9 @@ async function configurarNavegacionAutenticada() {
         if (perfilData && perfilData.nombre_usuario) {
             userDisplayName = perfilData.nombre_usuario;
         }
+
+        // Aplicar el modo oscuro globalmente
+        aplicarModoOscuro(perfilData);
 
         // Actualizamos la barra de navegación superior (incluye notificaciones)
         const userStatusDivs = document.querySelectorAll('#user-status');
@@ -106,13 +121,13 @@ async function configurarNavegacionAutenticada() {
                         </button>
 
                         <!-- Dropdown -->
-                        <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-lg shadow-xl overflow-hidden hidden z-50 border border-gray-100 text-gray-800">
-                        <div class="bg-gray-50 border-b border-gray-100 px-4 py-3 flex justify-between items-center z-50 relative pointer-events-auto">
+                        <div id="nav-notifications-dropdown" class="absolute right-0 mt-3 w-80 bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden hidden z-50 border border-[var(--color-border)] text-[var(--color-text-primary)]">
+                        <div class="bg-[var(--color-surface-secondary)] border-b border-[var(--color-border)] px-4 py-3 flex justify-between items-center z-50 relative pointer-events-auto">
                             <h3 class="font-bold text-sm">Notificaciones</h3>
                             <button id="mark-all-read-btn" class="text-xs text-[#c41200] hover:underline font-semibold cursor-pointer relative z-50 pointer-events-auto">Marcar leídas</button>
                         </div>
-                        <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-white relative z-10 pointer-events-auto">
-                            <li class="px-4 py-4 text-center text-gray-500 text-sm">Cargando...</li>
+                        <ul id="nav-notifications-list" class="max-h-80 overflow-y-auto bg-[var(--color-surface)] relative z-10 pointer-events-auto">
+                            <li class="px-4 py-4 text-center text-[var(--color-text-secondary)] text-sm">Cargando...</li>
                         </ul>
                         </div>
                     </div>
@@ -218,7 +233,7 @@ function mostrarSugerencias(resultados, query, suggestionsList, suggestionsConta
 
   if (resultados.length === 0) {
     const li = document.createElement('li');
-    li.className = 'px-4 py-3 text-gray-500 text-sm text-center';
+    li.className = 'px-4 py-3 text-[var(--color-text-secondary)] text-sm text-center';
     li.textContent = 'No se encontraron resultados';
     suggestionsList.appendChild(li);
   } else {
@@ -227,7 +242,7 @@ function mostrarSugerencias(resultados, query, suggestionsList, suggestionsConta
 
     topResultados.forEach(item => {
       const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 transition last:border-b-0 text-gray-800 flex items-center justify-between';
+      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-[var(--color-border)] transition last:border-b-0 text-[var(--color-text-primary)] flex items-center justify-between';
 
       // Resaltar la coincidencia
       const regex = new RegExp(`(${query})`, "gi");
@@ -236,13 +251,13 @@ function mostrarSugerencias(resultados, query, suggestionsList, suggestionsConta
       // Construir el lado izquierdo (icono/foto + nombre)
       let leftContent = '';
       if (item.tipo === 'restaurante') {
-          leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+          leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-[var(--color-text-secondary)] mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
       } else {
           // Si es usuario, mostrar icono de usuario o su foto en miniatura
           if (item.imagen_url) {
-              leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-gray-200"> ${nombreResaltado}</div>`;
+              leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-[var(--color-border)]"> ${nombreResaltado}</div>`;
           } else {
-              leftContent = `<div class="flex items-center"><i class="fas fa-user text-gray-400 mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+              leftContent = `<div class="flex items-center"><i class="fas fa-user text-[var(--color-text-secondary)] mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
           }
       }
 
@@ -302,18 +317,18 @@ async function cargarSugerencias() {
 
         restaurantes.forEach(rest => {
             const card = document.createElement('div');
-            card.className = "snap-start flex-shrink-0 w-72 md:w-80 bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition transform hover:-translate-y-1 relative";
+            card.className = "snap-start flex-shrink-0 w-72 md:w-80 bg-[var(--color-surface)] rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition transform hover:-translate-y-1 relative";
             card.onclick = () => window.location.href = `restaurante.html?id=${rest.id}`;
 
             const imgHtml = rest.imagen_url
                 ? `<img src="${rest.imagen_url}" alt="${rest.nombre}" class="w-full h-40 object-cover">`
-                : `<div class="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-400"><i class="fas fa-utensils text-4xl"></i></div>`;
+                : `<div class="w-full h-40 bg-[var(--color-surface-secondary)] flex items-center justify-center text-[var(--color-text-secondary)]"><i class="fas fa-utensils text-4xl"></i></div>`;
 
             card.innerHTML = `
                 ${imgHtml}
                 <div class="p-4">
-                    <h3 class="font-bold text-lg text-gray-800 truncate" title="${rest.nombre}">${rest.nombre}</h3>
-                    <p class="text-sm text-gray-500">${rest.categoria || 'Restaurante'}</p>
+                    <h3 class="font-bold text-lg text-[var(--color-text-primary)] truncate" title="${rest.nombre}">${rest.nombre}</h3>
+                    <p class="text-sm text-[var(--color-text-secondary)]">${rest.categoria || 'Restaurante'}</p>
                 </div>
             `;
             container.appendChild(card);
@@ -388,7 +403,7 @@ async function cargarTendencias() {
         container.innerHTML = '';
 
         if (tendencias.length < 6) {
-            container.innerHTML = '<p class="text-gray-500 py-4 w-full text-center col-span-full">Aún no hay suficientes reseñas para mostrar tendencias.</p>';
+            container.innerHTML = '<p class="text-[var(--color-text-secondary)] py-4 w-full text-center col-span-full">Aún no hay suficientes reseñas para mostrar tendencias.</p>';
             return;
         }
 
@@ -414,24 +429,24 @@ async function cargarTendencias() {
 
                 <!-- Bloque Derecho Superior (#2 y #3) -->
                 <div class="flex flex-col gap-6">
-                    <div class="relative flex flex-grow bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top2.id}'">
+                    <div class="relative flex flex-grow bg-[var(--color-surface)] rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top2.id}'">
                         <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">2</div>
                         <img src="${top2.imagen_url || ''}" alt="${top2.nombre}" class="w-2/5 object-cover min-h-[120px]">
                         <div class="p-4 flex flex-col justify-center w-3/5">
-                            <h4 class="font-bold text-lg truncate" title="${top2.nombre}">${top2.nombre}</h4>
+                            <h4 class="font-bold text-lg truncate text-[var(--color-text-primary)]" title="${top2.nombre}">${top2.nombre}</h4>
                             <div class="flex justify-between items-center text-sm mt-2">
-                                <span class="text-gray-500 truncate mr-2">${top2.categoria || ''}</span>
+                                <span class="text-[var(--color-text-secondary)] truncate mr-2">${top2.categoria || ''}</span>
                                 <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${top2.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                             </div>
                         </div>
                     </div>
-                    <div class="relative flex flex-grow bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top3.id}'">
+                    <div class="relative flex flex-grow bg-[var(--color-surface)] rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top3.id}'">
                         <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">3</div>
                         <img src="${top3.imagen_url || ''}" alt="${top3.nombre}" class="w-2/5 object-cover min-h-[120px]">
                         <div class="p-4 flex flex-col justify-center w-3/5">
-                            <h4 class="font-bold text-lg truncate" title="${top3.nombre}">${top3.nombre}</h4>
+                            <h4 class="font-bold text-lg truncate text-[var(--color-text-primary)]" title="${top3.nombre}">${top3.nombre}</h4>
                             <div class="flex justify-between items-center text-sm mt-2">
-                                <span class="text-gray-500 truncate mr-2">${top3.categoria || ''}</span>
+                                <span class="text-[var(--color-text-secondary)] truncate mr-2">${top3.categoria || ''}</span>
                                 <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${top3.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                             </div>
                         </div>
@@ -441,35 +456,35 @@ async function cargarTendencias() {
 
             <!-- Bloque Inferior (#4, #5, #6) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top4.id}'">
+                <div class="relative bg-[var(--color-surface)] rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top4.id}'">
                     <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">4</div>
                     <img src="${top4.imagen_url || ''}" alt="${top4.nombre}" class="w-full h-40 object-cover">
                     <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top4.nombre}</h5>
+                        <h5 class="font-bold text-md truncate text-[var(--color-text-primary)]">${top4.nombre}</h5>
                         <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500 truncate mr-2">${top4.categoria || ''}</span>
+                            <span class="text-[var(--color-text-secondary)] truncate mr-2">${top4.categoria || ''}</span>
                             <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${top4.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                         </div>
                     </div>
                 </div>
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top5.id}'">
+                <div class="relative bg-[var(--color-surface)] rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top5.id}'">
                     <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">5</div>
                     <img src="${top5.imagen_url || ''}" alt="${top5.nombre}" class="w-full h-40 object-cover">
                     <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top5.nombre}</h5>
+                        <h5 class="font-bold text-md truncate text-[var(--color-text-primary)]">${top5.nombre}</h5>
                         <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500 truncate mr-2">${top5.categoria || ''}</span>
+                            <span class="text-[var(--color-text-secondary)] truncate mr-2">${top5.categoria || ''}</span>
                             <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${top5.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                         </div>
                     </div>
                 </div>
-                <div class="relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top6_.id}'">
+                <div class="relative bg-[var(--color-surface)] rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:-translate-y-2" onclick="window.location.href='restaurante.html?id=${top6_.id}'">
                     <div class="absolute top-3 left-3 bg-[#c41200] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-base shadow-md z-10">6</div>
                     <img src="${top6_.imagen_url || ''}" alt="${top6_.nombre}" class="w-full h-40 object-cover">
                     <div class="p-4">
-                        <h5 class="font-bold text-md truncate">${top6_.nombre}</h5>
+                        <h5 class="font-bold text-md truncate text-[var(--color-text-primary)]">${top6_.nombre}</h5>
                         <div class="flex justify-between items-center text-sm mt-1">
-                            <span class="text-gray-500 truncate mr-2">${top6_.categoria || ''}</span>
+                            <span class="text-[var(--color-text-secondary)] truncate mr-2">${top6_.categoria || ''}</span>
                             <span class="font-bold text-yellow-500 flex items-center gap-1 shrink-0">${top6_.rating.toFixed(1)} <i class="fas fa-star"></i></span>
                         </div>
                     </div>
@@ -508,7 +523,7 @@ async function cargarResenasRecientes() {
     container.innerHTML = '';
 
     if (!resenasData || resenasData.length === 0) {
-      container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No hay reseñas recientes aún.</p>';
+      container.innerHTML = '<p class="text-[var(--color-text-secondary)] col-span-full text-center py-8">No hay reseñas recientes aún.</p>';
       return;
     }
 
@@ -562,23 +577,23 @@ async function cargarResenasRecientes() {
       const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
       const resenaDiv = document.createElement('div');
-      resenaDiv.className = "bg-white p-6 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full relative z-10";
+      resenaDiv.className = "bg-[var(--color-surface)] p-6 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full relative z-10";
 
       resenaDiv.innerHTML = `
         <div class="flex justify-between items-start mb-4">
           <div>
-            <a href="restaurante.html?id=${restauranteId}" class="font-bold text-lg text-gray-800 hover:text-[#c41200] hover:underline transition">${restauranteNombre}</a>
-            <p class="text-sm text-gray-500 mt-1">Por <a href="perfil.html?id=${usuarioId}" class="font-semibold text-gray-600 hover:text-[#c41200] hover:underline transition">${usuarioNombre}</a></p>
+            <a href="restaurante.html?id=${restauranteId}" class="font-bold text-lg text-[var(--color-text-primary)] hover:text-[#c41200] hover:underline transition">${restauranteNombre}</a>
+            <p class="text-sm text-[var(--color-text-secondary)] mt-1">Por <a href="perfil.html?id=${usuarioId}" class="font-semibold text-[var(--color-text-primary)] hover:text-[#c41200] hover:underline transition">${usuarioNombre}</a></p>
           </div>
           <div class="flex items-center gap-3">
             <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
-            <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+            <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
                 <i class="fas fa-volume-up"></i>
             </button>
           </div>
         </div>
-        <p class="text-gray-700 mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
-        <div class="text-xs text-gray-500 flex items-center justify-between mt-auto pt-4 border-t border-gray-100 mb-3">
+        <p class="text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
+        <div class="text-xs text-[var(--color-text-secondary)] flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border)] mb-3">
            <span class="flex items-center gap-1" title="Calidad de la Comida"><i class="fas fa-utensils w-4 text-center text-gray-400"></i> ${comidaRating}</span>
            <span class="flex items-center gap-1" title="Atención"><i class="fas fa-concierge-bell w-4 text-center text-gray-400"></i> ${atencionRating}</span>
            <span class="flex items-center gap-1" title="Precio"><i class="fas fa-money-bill-wave w-4 text-center text-gray-400"></i> ${precioRating}</span>
@@ -820,7 +835,7 @@ async function configurarNotificaciones(navContext = document) {
             }
 
             if (notificaciones.length === 0) {
-                notifList.innerHTML = '<li class="px-4 py-4 text-center text-gray-500 text-sm">No tienes notificaciones</li>';
+                notifList.innerHTML = '<li class="px-4 py-4 text-center text-[var(--color-text-secondary)] text-sm">No tienes notificaciones</li>';
                 return;
             }
 
@@ -847,8 +862,8 @@ async function configurarNotificaciones(navContext = document) {
 
             notificaciones.forEach(notif => {
                 const li = document.createElement('li');
-                const isUnreadClass = notif.leida ? 'bg-white' : 'bg-red-50';
-                li.className = `p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${isUnreadClass} pointer-events-auto`;
+                const isUnreadClass = notif.leida ? 'bg-[var(--color-surface)]' : 'bg-red-50';
+                li.className = `p-3 border-b border-[var(--color-border)] hover:bg-[var(--color-surface-secondary)] cursor-pointer transition ${isUnreadClass} pointer-events-auto`;
 
                 const actor = actoresMap[notif.actor_id];
                 const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
@@ -856,7 +871,7 @@ async function configurarNotificaciones(navContext = document) {
 
                 let iconHtml = actorImg
                     ? `<img src="${actorImg}" class="w-8 h-8 rounded-full object-cover">`
-                    : `<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
+                    : `<div class="w-8 h-8 rounded-full bg-[var(--color-surface-secondary)] text-[var(--color-text-secondary)] flex items-center justify-center"><i class="fas fa-user text-xs"></i></div>`;
 
                 let mensaje = '';
                 let urlDestino = '#';
@@ -890,8 +905,8 @@ async function configurarNotificaciones(navContext = document) {
                     <div class="flex items-start gap-3">
                         <div class="mt-1">${iconHtml}</div>
                         <div class="flex-1">
-                            <p class="text-sm text-gray-800 leading-snug">${mensaje}</p>
-                            <span class="text-[10px] text-gray-400 mt-1 block">${displayDate}</span>
+                            <p class="text-sm text-[var(--color-text-primary)] leading-snug">${mensaje}</p>
+                            <span class="text-[10px] text-[var(--color-text-secondary)] mt-1 block">${displayDate}</span>
                         </div>
                         ${!notif.leida ? '<div class="w-2 h-2 bg-[#c41200] rounded-full mt-2"></div>' : ''}
                     </div>

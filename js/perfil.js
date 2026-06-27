@@ -1,5 +1,6 @@
 // supabaseClient and currentUserId are now global, provided by app.js
 let viewedUserId = null;
+let userProfile = null; // Variable para guardar el perfil del usuario
 let allUserRestaurants = []; // Cache for favorite restaurants editing
 let allUserReviews = []; // Cache for user's reviews
 let allUserVotes = []; // Cache for votes on those reviews
@@ -58,7 +59,12 @@ async function loadProfileData() {
 
         // --- Renderizar Información del Perfil ---
         if (profileRes.error) throw profileRes.error;
-        const profile = profileRes.data;
+        userProfile = profileRes.data; // Guardar el perfil en la variable
+
+        // Aplicar modo oscuro si está activado
+        if (userProfile.modo_oscuro) {
+            document.body.classList.add('dark');
+        }
 
         const followersCount = followersRes.count !== null ? followersRes.count : 0;
         const followingCount = followingRes.count !== null ? followingRes.count : 0;
@@ -66,7 +72,7 @@ async function loadProfileData() {
         if (followersRes.error) console.error("Error cargando seguidores:", followersRes.error);
         if (followingRes.error) console.error("Error cargando seguidos:", followingRes.error);
 
-        renderProfileHeader(profile, followersCount, followingCount);
+        renderProfileHeader(userProfile, followersCount, followingCount);
 
         // --- Cargar y Guardar Reseñas y Votos en caché ---
         if (reviewsRes.error) throw reviewsRes.error;
@@ -101,7 +107,7 @@ async function loadProfileData() {
         setupActionButtons(isFollowingData && isFollowingData.length > 0);
 
         // --- Cargar Restaurantes Favoritos ---
-        await loadFavoriteRestaurants(profile.restaurantes_favoritos);
+        await loadFavoriteRestaurants(userProfile.restaurantes_favoritos);
 
     } catch (error) {
         console.error('Error al cargar el perfil:', error);
@@ -201,7 +207,7 @@ function renderUserReviews(sortMode = 'recientes') {
 
     sortedReviews.forEach(review => {
         const reviewEl = document.createElement('div');
-        reviewEl.className = 'border-b last:border-b-0 pb-4 mb-4';
+        reviewEl.className = 'border-b last:border-b-0 pb-4 mb-4 border-[var(--color-border)]';
         reviewEl.setAttribute('data-review-id', review.id); // ID para poder eliminarlo del DOM
 
         const restaurantName = review.restaurantes ? review.restaurantes.nombre : 'un restaurante';
@@ -234,16 +240,16 @@ function renderUserReviews(sortMode = 'recientes') {
             <div class="flex justify-between items-start mb-2">
                 <div>
                     <h4 class="font-bold text-lg hover:text-[#c41200] cursor-pointer" onclick="window.location.href='restaurante.html?id=${restaurantId}'">${restaurantName}</h4>
-                    <p class="text-xs text-gray-400">${new Date(review.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p class="text-xs text-[var(--color-text-secondary)]">${new Date(review.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="text-sm font-bold text-yellow-500">${review.puntuacion_general} ★</span>
-                    <button onclick="leerResena('${review.comentario.replace(/'/g, "\\'")}')" class="text-gray-400 hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+                    <button onclick="leerResena('${review.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
                         <i class="fas fa-volume-up"></i>
                     </button>
                 </div>
             </div>
-            <p class="text-gray-600 text-sm mb-2">"${review.comentario}"</p>
+            <p class="text-[var(--color-text-primary)] text-sm mb-2">"${review.comentario}"</p>
 
             <div class="flex items-center justify-between mt-3">
                 ${actionsHTML}
@@ -478,30 +484,39 @@ async function toggleFollow() {
 function toggleBioEditMode() {
     document.getElementById('bio-container').classList.toggle('hidden');
     document.getElementById('bio-edit-container').classList.toggle('hidden');
-    // Pre-rellenar el formulario
-    document.getElementById('bio-edit-textarea').value = document.getElementById('profile-bio').textContent;
-    document.getElementById('image-url-input').value = document.getElementById('profile-image').src;
-    document.getElementById('cover-url-input').value = document.getElementById('cover-image').src;
+
+    // Pre-rellenar el formulario con los datos actuales del perfil
+    if (userProfile) {
+        document.getElementById('bio-edit-textarea').value = userProfile.biografia || '';
+        document.getElementById('image-url-input').value = userProfile.imagen_url || '';
+        document.getElementById('cover-url-input').value = userProfile.portada_url || '';
+        document.getElementById('dark-mode-toggle').checked = userProfile.modo_oscuro || false;
+    }
 }
 
 async function saveProfile() {
     const newBio = document.getElementById('bio-edit-textarea').value;
     const newImageUrl = document.getElementById('image-url-input').value;
     const newCoverUrl = document.getElementById('cover-url-input').value;
+    const newDarkMode = document.getElementById('dark-mode-toggle').checked;
 
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
         .from('perfiles')
         .update({
             biografia: newBio,
             imagen_url: newImageUrl,
-            portada_url: newCoverUrl
+            portada_url: newCoverUrl,
+            modo_oscuro: newDarkMode
         })
-        .eq('id', currentUserId);
+        .eq('id', currentUserId)
+        .select()
+        .single();
 
     if (error) {
         alert('Error al guardar el perfil.');
     } else {
         // Actualizar la UI sin recargar
+        userProfile = data; // Actualizar el perfil cacheado
         document.getElementById('profile-bio').textContent = newBio;
         if (newBio) document.getElementById('bio-container').classList.remove('hidden');
         else document.getElementById('bio-container').classList.add('hidden');
@@ -516,6 +531,13 @@ async function saveProfile() {
             document.getElementById('cover-image').src = newCoverUrl;
             document.getElementById('cover-image').classList.remove('hidden');
             document.getElementById('cover-placeholder').classList.add('hidden');
+        }
+
+        // Aplicar o quitar el modo oscuro
+        if (newDarkMode) {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
         }
 
         toggleBioEditMode();

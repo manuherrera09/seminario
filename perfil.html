@@ -4,14 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Perfil - TrackEat</title>
+  <!-- Estilos del Modo Oscuro -->
+  <link rel="stylesheet" href="css/dark-mode.css">
+  <!-- Font Awesome para los iconos de redes sociales -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Scripts -->
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome para los iconos de redes sociales -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Estilos para el toggle de modo oscuro */
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: var(--color-brand);
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: var(--color-brand);
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+<body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
 
 <nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
   <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -22,11 +35,11 @@
     <!-- Barra de búsqueda en la navegación -->
     <div class="w-full md:w-1/3 relative">
       <div class="relative">
-        <input type="text" id="nav-search-input" class="w-full py-2 pl-10 pr-4 text-gray-800 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-red-300 transition text-sm" placeholder="Busca un restaurante o usuario...">
-        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" id="nav-search-input" class="w-full py-2 pl-10 pr-4 bg-[var(--color-surface)] text-[var(--color-text-primary)] rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-red-300 transition text-sm" placeholder="Busca un restaurante o usuario...">
+        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-secondary)] text-sm"></i>
       </div>
       <!-- Contenedor de sugerencias (oculto por defecto) -->
-      <div id="nav-search-suggestions" class="absolute w-full mt-1 bg-white rounded-lg shadow-xl overflow-hidden hidden z-50 text-left">
+      <div id="nav-search-suggestions" class="absolute w-full mt-1 bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden hidden z-50 text-left">
         <ul id="nav-suggestions-list" class="max-h-60 overflow-y-auto">
           <!-- Las sugerencias se llenarán con JS -->
         </ul>
@@ -52,28 +65,28 @@
   <main class="container mx-auto p-6 flex-grow">
 
     <!-- Contenedor de la Portada -->
-    <div class="h-64 md:h-80 bg-gray-200 rounded-lg mb-[-4rem] md:mb-[-5rem] relative">
+    <div class="h-64 md:h-80 bg-[var(--color-surface-secondary)] rounded-lg mb-[-4rem] md:mb-[-5rem] relative">
         <img id="cover-image" src="" alt="Foto de portada" class="w-full h-full object-cover rounded-lg hidden">
         <div id="cover-placeholder" class="w-full h-full flex items-center justify-center">
-            <i class="fas fa-camera text-4xl text-gray-400"></i>
+            <i class="fas fa-camera text-4xl text-[var(--color-text-secondary)]"></i>
         </div>
     </div>
 
     <!-- Encabezado del Perfil -->
-    <div class="bg-white p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative">
+    <div class="bg-[var(--color-surface)] p-8 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative">
 
       <!-- Contenedor de la foto de perfil -->
-      <div id="profile-picture-container" class="w-32 h-32 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-5xl shadow-inner shrink-0 overflow-hidden relative group mt-[-6rem] border-4 border-white">
+      <div id="profile-picture-container" class="w-64 h-64 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center text-8xl shadow-inner shrink-0 overflow-hidden relative group mt-[-6rem] border-4 border-white">
         <i id="profile-icon" class="fas fa-user"></i>
         <img id="profile-image" src="" alt="Foto de perfil" class="w-full h-full object-cover hidden">
       </div>
 
       <div class="text-center md:text-left flex-grow pt-4">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
-            <h1 class="text-3xl font-bold text-gray-800" id="profile-name">Cargando...</h1>
+            <h1 class="text-3xl font-bold text-[var(--color-text-primary)]" id="profile-name">Cargando...</h1>
             <!-- Insignia del usuario -->
             <div id="user-badge-container" class="hidden">
-               <span id="user-badge" class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-semibold border border-gray-200"><i class="fas fa-star mr-1"></i> Calculando...</span>
+               <span id="user-badge" class="bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)] text-xs px-3 py-1 rounded-full font-semibold border border-[var(--color-border)]"><i class="fas fa-star mr-1"></i> Calculando...</span>
             </div>
             <!-- Botón de seguir (solo visible si vemos perfil ajeno) -->
             <button id="follow-btn" class="hidden text-sm bg-[#c41200] text-white px-4 py-1.5 rounded-full font-semibold hover:bg-[#a00e00] transition ml-2 shadow-sm">
@@ -81,28 +94,41 @@
             </button>
         </div>
 
-        <p class="text-gray-500 mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
-        <p class="text-gray-500 mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Recientemente</p>
+        <p class="text-[var(--color-text-secondary)] mt-1" id="profile-email"><i class="fas fa-envelope mr-2"></i>...</p>
+        <p class="text-[var(--color-text-secondary)] mt-1"><i class="fas fa-calendar-alt mr-2"></i>Miembro desde: Recientemente</p>
 
         <!-- Contenedor para la biografía -->
-        <div class="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-100 hidden" id="bio-container">
-            <p class="text-sm text-gray-700 italic" id="profile-bio"></p>
+        <div class="mt-3 bg-[var(--color-surface-secondary)] p-4 rounded-lg border border-[var(--color-border)] hidden" id="bio-container">
+            <p class="text-sm text-[var(--color-text-primary)] italic" id="profile-bio"></p>
         </div>
 
         <!-- Formulario para editar la biografía (Oculto por defecto) -->
-        <div class="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-100 hidden" id="bio-edit-container">
+        <div class="mt-3 bg-[var(--color-surface-secondary)] p-4 rounded-lg border border-[var(--color-border)] hidden" id="bio-edit-container">
             <div class="mb-3">
-                <label for="image-url-input" class="block text-xs font-semibold text-gray-600 mb-1">URL de la Foto de Perfil (Opcional)</label>
-                <input type="url" id="image-url-input" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/foto.jpg">
+                <label for="image-url-input" class="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">URL de la Foto de Perfil (Opcional)</label>
+                <input type="url" id="image-url-input" class="w-full border p-2 rounded text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/foto.jpg">
             </div>
             <div class="mb-3">
-                <label for="cover-url-input" class="block text-xs font-semibold text-gray-600 mb-1">URL de la Foto de Portada (Opcional)</label>
-                <input type="url" id="cover-url-input" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/portada.jpg">
+                <label for="cover-url-input" class="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">URL de la Foto de Portada (Opcional)</label>
+                <input type="url" id="cover-url-input" class="w-full border p-2 rounded text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="https://ejemplo.com/portada.jpg">
             </div>
 
             <div>
-                <label for="bio-edit-textarea" class="block text-xs font-semibold text-gray-600 mb-1">Tu biografía</label>
-                <textarea id="bio-edit-textarea" rows="3" class="w-full border p-2 rounded text-sm focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="Escribe algo sobre ti..."></textarea>
+                <label for="bio-edit-textarea" class="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Tu biografía</label>
+                <textarea id="bio-edit-textarea" rows="3" class="w-full border p-2 rounded text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] focus:outline-none focus:ring-[#c41200] focus:border-[#c41200]" placeholder="Escribe algo sobre ti..."></textarea>
+            </div>
+
+            <!-- Interruptor para Modo Oscuro -->
+            <div class="flex items-center justify-between mt-4">
+              <span class="text-sm font-semibold text-[var(--color-text-secondary)]">Modo Oscuro</span>
+              <div class="flex items-center">
+                <i class="fas fa-sun text-red-500 mr-2"></i>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                  <input type="checkbox" name="dark-mode-toggle" id="dark-mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                  <label for="dark-mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                </div>
+                <i class="fas fa-moon text-red-500 ml-2"></i>
+              </div>
             </div>
 
             <div class="mt-3 flex gap-2">
@@ -112,17 +138,17 @@
         </div>
 
         <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center">
+            <div class="bg-[var(--color-surface-secondary)] px-4 py-2 rounded-lg text-center">
                 <span class="block text-2xl font-bold text-[#c41200]" id="stats-resenas">0</span>
-                <span class="text-xs text-gray-500 uppercase tracking-wider">Reseñas</span>
+                <span class="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider">Reseñas</span>
             </div>
-            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="followers-container">
+            <div class="bg-[var(--color-surface-secondary)] px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="followers-container">
                 <span class="block text-2xl font-bold text-[#c41200]" id="stats-seguidores">0</span>
-                <span class="text-xs text-gray-500 uppercase tracking-wider">Seguidores</span>
+                <span class="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider">Seguidores</span>
             </div>
-            <div class="bg-gray-100 px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="following-container">
+            <div class="bg-[var(--color-surface-secondary)] px-4 py-2 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition" id="following-container">
                 <span class="block text-2xl font-bold text-[#c41200]" id="stats-seguidos">0</span>
-                <span class="text-xs text-gray-500 uppercase tracking-wider">Seguidos</span>
+                <span class="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider">Seguidos</span>
             </div>
         </div>
       </div>
@@ -138,15 +164,15 @@
 
       <!-- Columna Izquierda: Actividad Reciente o Estadísticas -->
       <div class="lg:col-span-1 space-y-6">
-          <div class="bg-white p-6 rounded-lg shadow-md">
-             <div class="flex justify-between items-center border-b pb-2 mb-4">
-                 <h3 class="text-lg font-bold text-gray-800">Restaurantes Favoritos</h3>
+          <div class="bg-[var(--color-surface)] p-6 rounded-lg shadow-md">
+             <div class="flex justify-between items-center border-b border-[var(--color-border)] pb-2 mb-4">
+                 <h3 class="text-lg font-bold text-[var(--color-text-primary)]">Restaurantes Favoritos</h3>
                  <button id="edit-favs-btn" class="text-sm text-[#c41200] hover:text-[#a00e00] hidden"><i class="fas fa-edit"></i> Editar</button>
              </div>
 
              <!-- Lista para mostrar favoritos -->
              <ul class="space-y-3" id="mis-restaurantes-favoritos">
-                 <li class="text-gray-500 text-sm" id="mis-restaurantes-vacio">Cargando favoritos...</li>
+                 <li class="text-[var(--color-text-secondary)] text-sm" id="mis-restaurantes-vacio">Cargando favoritos...</li>
              </ul>
 
              <!-- Formulario para editar favoritos (Oculto) -->
@@ -164,12 +190,12 @@
 
       <!-- Columna Derecha: Historial de Reseñas -->
       <div class="lg:col-span-2">
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <div class="flex justify-between items-center border-b pb-4 mb-6">
-              <h2 class="text-2xl font-bold text-gray-800">Historial de Reseñas</h2>
+        <div class="bg-[var(--color-surface)] p-6 rounded-lg shadow-md">
+          <div class="flex justify-between items-center border-b border-[var(--color-border)] pb-4 mb-6">
+              <h2 class="text-2xl font-bold text-[var(--color-text-primary)]">Historial de Reseñas</h2>
 
               <!-- Filtro / Orden -->
-              <select id="sort-reviews" class="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c41200]">
+              <select id="sort-reviews" class="border border-[var(--color-border)] rounded p-2 text-sm bg-[var(--color-surface)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#c41200]">
                   <option value="recientes">Más recientes</option>
                   <option value="antiguas">Menos recientes</option>
                   <option value="mejores">Mejor puntuadas</option>
@@ -178,7 +204,7 @@
           </div>
 
           <div class="space-y-6" id="mis-resenas">
-             <p class="text-gray-500 text-center py-4" id="mis-resenas-vacio">Cargando reseñas...</p>
+             <p class="text-[var(--color-text-secondary)] text-center py-4" id="mis-resenas-vacio">Cargando reseñas...</p>
           </div>
 
         </div>
@@ -190,14 +216,14 @@
 
 <!-- Modal para ver Seguidores/Seguidos -->
 <div id="follows-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
-        <div class="flex justify-between items-center p-4 border-b">
+    <div class="bg-[var(--color-surface)] rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="flex justify-between items-center p-4 border-b border-[var(--color-border)]">
             <h3 class="text-lg font-bold" id="follows-modal-title">Usuarios</h3>
-            <button id="close-follows-modal" class="text-gray-500 hover:text-gray-800"><i class="fas fa-times text-xl"></i></button>
+            <button id="close-follows-modal" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"><i class="fas fa-times text-xl"></i></button>
         </div>
         <div class="p-4 overflow-y-auto flex-grow" id="follows-list-container">
             <!-- Lista de usuarios se cargará aquí -->
-            <p class="text-center text-gray-500 text-sm">Cargando...</p>
+            <p class="text-center text-[var(--color-text-secondary)] text-sm">Cargando...</p>
         </div>
     </div>
 </div>
