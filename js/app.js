@@ -11,6 +11,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let restaurantesCacheados = [];
 let perfilesCacheados = [];
 let currentUserId = null;
+let currentUserProfile = null;
 let navAuthReady = false;
 
 // Evento principal para App.js y para disparar la inicialización de otras páginas
@@ -84,6 +85,49 @@ function aplicarModoOscuro(perfil) {
     }
 }
 
+async function handleReportReview(reviewId, denouncedUserId) {
+    if (!currentUserId) {
+        alert('Debes iniciar sesión para denunciar una reseña.');
+        return;
+    }
+
+    if (currentUserId === denouncedUserId) {
+        alert('No puedes denunciar tus propias reseñas.');
+        return;
+    }
+
+    const motivo = prompt("Por favor, describe el motivo de tu denuncia (ej: spam, lenguaje ofensivo, etc.):");
+
+    if (motivo && motivo.trim() !== '') {
+        try {
+            const { error } = await supabaseClient
+                .from('denuncias')
+                .insert({
+                    resena_id: reviewId,
+                    denunciado_id: denouncedUserId,
+                    denunciante_id: currentUserId,
+                    motivo: motivo.trim()
+                });
+
+            if (error) {
+                // Manejar el caso de que ya exista una denuncia
+                if (error.code === '23505') { // 'unique_violation'
+                    alert('Ya has denunciado esta reseña anteriormente.');
+                } else {
+                    throw error;
+                }
+            } else {
+                alert('Gracias por tu denuncia. Nuestro equipo de moderación la revisará pronto.');
+            }
+        } catch (error) {
+            console.error('Error al enviar la denuncia:', error);
+            alert(`No se pudo procesar tu denuncia. Error: ${error.message}`);
+        }
+    } else if (motivo !== null) { // Si el usuario no canceló, pero dejó el campo vacío
+        alert('Debes especificar un motivo para la denuncia.');
+    }
+}
+
 
 async function configurarNavegacionAutenticada() {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -94,9 +138,11 @@ async function configurarNavegacionAutenticada() {
         // Buscamos su información en la tabla perfiles
         const { data: perfilData } = await supabaseClient
             .from('perfiles')
-            .select('nombre_usuario, modo_oscuro')
+            .select('nombre_usuario, modo_oscuro, rol')
             .eq('id', session.user.id)
             .single();
+
+        currentUserProfile = perfilData;
 
         let userDisplayName = session.user.email; // Por defecto mostramos el email
         if (perfilData && perfilData.nombre_usuario) {
@@ -106,12 +152,20 @@ async function configurarNavegacionAutenticada() {
         // Aplicar el modo oscuro globalmente
         aplicarModoOscuro(perfilData);
 
+        // Construir el enlace de moderación si el usuario es admin o moderador
+        let moderacionLink = '';
+        if (perfilData && (perfilData.rol === 'admin' || perfilData.rol === 'moderador')) {
+            moderacionLink = '<a href="moderacion.html" class="hover:text-red-200 transition">Moderación</a>';
+        }
+
         // Actualizamos la barra de navegación superior (incluye notificaciones)
         const userStatusDivs = document.querySelectorAll('#user-status');
         userStatusDivs.forEach(userStatusDiv => {
             if (userStatusDiv) {
                 userStatusDiv.innerHTML = `
                     <span class="text-sm text-white font-medium hidden md:inline">Hola, ${userDisplayName}</span>
+
+                    ${moderacionLink}
 
                     <!-- Contenedor Notificaciones -->
                     <div id="nav-notifications-container" class="relative ml-2 mr-2">
@@ -141,7 +195,7 @@ async function configurarNavegacionAutenticada() {
                 // Agregamos el evento al nuevo botón de cerrar sesión
                 userStatusDiv.querySelector('#logout-btn').addEventListener('click', async () => {
                     await supabaseClient.auth.signOut();
-                    window.location.reload(); // Recargamos la página al salir
+                    window.location.href = 'index.html';
                 });
             }
         });
@@ -607,6 +661,9 @@ async function cargarResenasRecientes() {
             </button>
             <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20" data-resena-id="${resena.id}">
                 <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${dislikesCount}</span>
+            </button>
+            <button onclick="handleReportReview('${resena.id}', '${resena.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
+                <i class="fas fa-flag pointer-events-none"></i>
             </button>
         </div>
       `;

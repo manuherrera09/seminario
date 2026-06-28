@@ -52,7 +52,7 @@ async function loadProfileData() {
         // Cargar perfil, reseñas, seguidores y seguidos en paralelo
         const [profileRes, reviewsRes, followersRes, followingRes] = await Promise.all([
             supabaseClient.from('perfiles').select('*').eq('id', viewedUserId).single(),
-            supabaseClient.from('resenas').select('*, restaurantes(id, nombre)').eq('id_usuario', viewedUserId),
+            supabaseClient.from('resenas').select('*, id_usuario, restaurantes(id, nombre)').eq('id_usuario', viewedUserId),
             supabaseClient.from('follows').select('follower_id', { count: 'exact' }).eq('following_id', viewedUserId),
             supabaseClient.from('follows').select('following_id', { count: 'exact' }).eq('follower_id', viewedUserId)
         ]);
@@ -260,6 +260,9 @@ function renderUserReviews(sortMode = 'recientes') {
                     <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${review.id}">
                         <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${dislikesCount}</span>
                     </button>
+                    <button onclick="handleReportReview('${review.id}', '${review.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
+                        <i class="fas fa-flag pointer-events-none"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -410,17 +413,20 @@ function setupEventListeners() {
 
 function setupActionButtons(isFollowing) {
     const editProfileBtn = document.getElementById('edit-profile-btn');
+    const reportsCenterBtn = document.getElementById('reports-center-btn');
     const editFavsBtn = document.getElementById('edit-favs-btn');
     const followBtn = document.getElementById('follow-btn');
 
     if (currentUserId === viewedUserId) {
         // Es mi perfil
         if (editProfileBtn) editProfileBtn.classList.remove('hidden');
+        if (reportsCenterBtn) reportsCenterBtn.classList.remove('hidden');
         if (editFavsBtn) editFavsBtn.classList.remove('hidden');
         if (followBtn) followBtn.classList.add('hidden');
     } else {
         // Es el perfil de otro
         if (editProfileBtn) editProfileBtn.classList.add('hidden');
+        if (reportsCenterBtn) reportsCenterBtn.classList.add('hidden');
         if (editFavsBtn) editFavsBtn.classList.add('hidden');
         if (followBtn) {
             followBtn.classList.remove('hidden');

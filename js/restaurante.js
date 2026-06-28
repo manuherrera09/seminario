@@ -423,6 +423,9 @@ function renderizarResenas(sortMode) {
                     <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
                         <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${resena.dislikes}</span>
                     </button>
+                    <button onclick="handleReportReview('${resena.id}', '${resena.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
+                        <i class="fas fa-flag pointer-events-none"></i>
+                    </button>
                 </div>
             </div>
         `;
