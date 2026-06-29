@@ -2,6 +2,10 @@ let currentRestauranteId = null;
 let allReviews = [];
 // currentUserId and supabaseClient are now global, provided by app.js
 
+// --- Variables para el Modal de Imágenes ---
+let currentImageUrls = [];
+let currentImageIndex = 0;
+
 // =========================================================================
 // 2. INICIALIZACIÓN DE LA PÁGINA
 // =========================================================================
@@ -33,6 +37,15 @@ function initRestaurantePage() {
             renderizarResenas(e.target.value);
         });
     }
+
+    // --- Listeners para el Modal de Imágenes ---
+    const closeImageModalBtn = document.getElementById('close-image-modal');
+    const prevImageBtn = document.getElementById('modal-prev-btn');
+    const nextImageBtn = document.getElementById('modal-next-btn');
+
+    if(closeImageModalBtn) closeImageModalBtn.addEventListener('click', closeImageModal);
+    if(prevImageBtn) prevImageBtn.addEventListener('click', () => changeModalImage(-1));
+    if(nextImageBtn) nextImageBtn.addEventListener('click', () => changeModalImage(1));
 }
 
 // Escuchar el evento personalizado desde app.js o ejecutar directamente si ya está listo
@@ -192,6 +205,7 @@ async function cargarDetallesRestaurante() {
                 precio,
                 ambiente,
                 id_usuario,
+                urls_imagenes,
                 perfiles (nombre_usuario, imagen_url)
             `)
             .eq('id_restaurante', currentRestauranteId)
@@ -339,12 +353,34 @@ function renderizarResenas(sortMode) {
     }
 
     sortedReviews.forEach(resena => {
+        const divResena = document.createElement('div');
+        divResena.className = "border-b border-[var(--color-border)] last:border-b-0 pb-6 last:pb-0";
+
+        // --- Generar HTML para las miniaturas de imágenes ---
+        let imagesHTML = '';
+        if (resena.urls_imagenes && resena.urls_imagenes.length > 0) {
+            const imageElements = resena.urls_imagenes.map((url, index) => `
+                <img src="${url}" alt="Miniatura de reseña ${index + 1}"
+                     class="w-full h-24 object-cover rounded-md cursor-pointer hover:opacity-80 transition"
+                     onclick="openImageModal(event, ${index})">
+            `).join('');
+
+            divResena.dataset.imageUrls = JSON.stringify(resena.urls_imagenes);
+
+            imagesHTML = `
+                <div class="w-1/3 pr-4 flex-shrink-0">
+                    <div class="grid grid-cols-1 gap-2">
+                        ${imageElements}
+                    </div>
+                </div>
+            `;
+        }
+
         const fechaObj = new Date(resena.created_at);
         const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
             day: 'numeric', month: 'long', year: 'numeric'
         });
 
-        // Extraer datos del perfil del autor
         const autor = resena.perfiles;
         const nombreAutor = autor ? autor.nombre_usuario : 'Usuario Anónimo';
         const imagenAutor = autor ? autor.imagen_url : null;
@@ -358,7 +394,6 @@ function renderizarResenas(sortMode) {
                         </div>`;
         }
 
-        // Generar HTML de las estrellitas generales
         let starsHtml = '';
         const rating = resena.puntuacion_general || 0;
         const fullStars = Math.floor(rating);
@@ -381,52 +416,53 @@ function renderizarResenas(sortMode) {
             extraRatingsHTML = `<span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-music text-[var(--color-text-secondary)]"></i> ${resena.ambiente}/5</span>`;
         }
 
-        // Lógica de botones de like/dislike visuales
         const likeClass = resena.userVoto === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50';
         const dislikeClass = resena.userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
-        const divResena = document.createElement('div');
-        divResena.className = "border-b border-[var(--color-border)] last:border-b-0 pb-6 last:pb-0";
-
         divResena.innerHTML = `
-            <div class="flex justify-between items-start mb-3">
-                <div class="flex items-center gap-3">
-                    ${avatarHtml}
-                    <div>
-                        <h4 class="font-bold text-[var(--color-text-primary)] cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
-                        <p class="text-xs text-[var(--color-text-secondary)]">${fechaFormateada}</p>
+            <div class="flex">
+                ${imagesHTML}
+                <div class="flex-grow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            ${avatarHtml}
+                            <div>
+                                <h4 class="font-bold text-[var(--color-text-primary)] cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
+                                <p class="text-xs text-[var(--color-text-secondary)]">${fechaFormateada}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex text-sm bg-[var(--color-surface-secondary)] px-2 py-1 rounded-md border border-[var(--color-border)]">
+                                ${starsHtml}
+                            </div>
+                            <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex text-sm bg-[var(--color-surface-secondary)] px-2 py-1 rounded-md border border-[var(--color-border)]">
-                        ${starsHtml}
+
+                    <p class="text-[var(--color-text-primary)] text-sm mb-3 bg-[var(--color-surface)] p-2 rounded">${resena.comentario}</p>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex gap-4 text-xs text-[var(--color-text-secondary)] flex-wrap">
+                            <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-utensils text-[var(--color-text-secondary)]"></i> ${resena.calidad_comida}/5</span>
+                            <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-concierge-bell text-[var(--color-text-secondary)]"></i> ${resena.atencion}/5</span>
+                            <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-[var(--color-text-secondary)]"></i> ${resena.precio}/5</span>
+                            ${extraRatingsHTML}
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
+                                <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${resena.likes}</span>
+                            </button>
+                            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
+                                <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${resena.dislikes}</span>
+                            </button>
+                            <button onclick="handleReportReview('${resena.id}', '${resena.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
+                                <i class="fas fa-flag pointer-events-none"></i>
+                            </button>
+                        </div>
                     </div>
-                    <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                </div>
-            </div>
-
-            <p class="text-[var(--color-text-primary)] text-sm mb-3 bg-[var(--color-surface)] p-2 rounded">${resena.comentario}</p>
-
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex gap-4 text-xs text-[var(--color-text-secondary)] flex-wrap">
-                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-utensils text-[var(--color-text-secondary)]"></i> ${resena.calidad_comida}/5</span>
-                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-concierge-bell text-[var(--color-text-secondary)]"></i> ${resena.atencion}/5</span>
-                    <span class="flex items-center gap-1 bg-[var(--color-surface-secondary)] px-2 py-1 rounded"><i class="fas fa-money-bill-wave text-[var(--color-text-secondary)]"></i> ${resena.precio}/5</span>
-                    ${extraRatingsHTML}
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass}" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
-                        <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${resena.likes}</span>
-                    </button>
-                    <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass}" data-resena-id="${resena.id}">
-                        <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${resena.dislikes}</span>
-                    </button>
-                    <button onclick="handleReportReview('${resena.id}', '${resena.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
-                        <i class="fas fa-flag pointer-events-none"></i>
-                    </button>
                 </div>
             </div>
         `;
@@ -445,4 +481,41 @@ function mostrarError(msg = null) {
     if (msg) {
         document.getElementById('error-container').querySelector('p').textContent = msg;
     }
+}
+
+// --- Funciones para el Modal de Imágenes ---
+function openImageModal(event, index) {
+    const reviewElement = event.target.closest('[data-image-urls]');
+    if (!reviewElement) return;
+
+    const urls = JSON.parse(reviewElement.dataset.imageUrls);
+
+    currentImageUrls = urls;
+    currentImageIndex = index;
+
+    document.getElementById('image-modal').classList.remove('hidden');
+    updateModalImage();
+}
+
+function closeImageModal() {
+    document.getElementById('image-modal').classList.add('hidden');
+    currentImageUrls = [];
+    currentImageIndex = 0;
+}
+
+function changeModalImage(direction) {
+    currentImageIndex += direction;
+    updateModalImage();
+}
+
+function updateModalImage() {
+    const modalImage = document.getElementById('modal-image-content');
+    const prevBtn = document.getElementById('modal-prev-btn');
+    const nextBtn = document.getElementById('modal-next-btn');
+
+    modalImage.src = currentImageUrls[currentImageIndex];
+
+    // Mostrar/ocultar botones de navegación
+    prevBtn.classList.toggle('hidden', currentImageIndex === 0);
+    nextBtn.classList.toggle('hidden', currentImageIndex === currentImageUrls.length - 1);
 }

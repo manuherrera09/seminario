@@ -225,6 +225,15 @@
           <textarea id="comentario" rows="4" class="w-full border p-2 rounded mt-1 bg-[var(--color-surface)] border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition" placeholder="¿Qué tal estuvo la comida?" required></textarea>
         </div>
 
+        <!-- Campo para subir imágenes -->
+        <div>
+          <label for="imagenes" class="block text-sm font-medium mt-4">Adjuntar Imágenes (hasta 2)</label>
+          <input type="file" id="imagenes" name="imagenes" multiple accept="image/*" class="w-full text-sm text-[var(--color-text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#c41200] file:text-white hover:file:bg-[#a00e00] transition">
+          <div id="image-previews" class="mt-4 grid grid-cols-2 gap-4">
+            <!-- Las vistas previas de las imágenes se insertarán aquí -->
+          </div>
+        </div>
+
         <button type="submit" id="submit-btn" class="w-full bg-[#c41200] text-white font-bold py-2 rounded-md hover:bg-[#a00e00] transition shadow-md disabled:opacity-50">
           Publicar Reseña
         </button>

@@ -580,6 +580,7 @@ async function cargarResenasRecientes() {
       .from('resenas')
       .select(`
         *,
+        urls_imagenes,
         restaurantes (nombre),
         perfiles (nombre_usuario, imagen_url)
       `)
@@ -701,6 +702,22 @@ function abrirModalDeResena(reviewId) {
         avatarContainer.innerHTML = `<a href="perfil.html?id=${resena.id_usuario}"><img src="${resena.perfiles.imagen_url}" alt="Foto de ${resena.perfiles.nombre_usuario}" class="w-full h-full object-cover rounded-full"></a>`;
     } else {
         avatarContainer.innerHTML = `<a href="perfil.html?id=${resena.id_usuario}" class="w-full h-full flex items-center justify-center">${resena.perfiles.nombre_usuario.charAt(0).toUpperCase()}</a>`;
+    }
+
+    // --- NUEVO: Lógica para mostrar imágenes ---
+    const imagesContainer = document.getElementById('modal-images-container');
+    imagesContainer.innerHTML = ''; // Limpiar contenedor
+    if (resena.urls_imagenes && resena.urls_imagenes.length > 0) {
+        imagesContainer.classList.remove('hidden');
+        resena.urls_imagenes.forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = "Imagen de la reseña";
+            img.className = "w-full h-auto object-cover rounded-lg shadow-md";
+            imagesContainer.appendChild(img);
+        });
+    } else {
+        imagesContainer.classList.add('hidden');
     }
 
     // Ratings detallados

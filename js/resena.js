@@ -2,6 +2,48 @@
 
 let editReviewId = null; // ID de la reseña a editar (si existe)
 let restaurantesList = []; // Para almacenar todos los restaurantes para la búsqueda
+const MAX_IMAGES = 2; // Límite de imágenes por reseña
+
+// =========================================================================
+// FUNCIÓN AUXILIAR PARA SUBIR IMÁGENES
+// =========================================================================
+async function uploadReviewImages(files, userId) {
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  const uploadPromises = files.map(file => {
+    // Usamos un nombre de archivo único para evitar colisiones
+    const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+    const filePath = `${userId}/${fileName}`;
+
+    return supabaseClient.storage
+      .from('fotos_resenas')
+      .upload(filePath, file);
+  });
+
+  const uploadResults = await Promise.all(uploadPromises);
+
+  const urls = [];
+  for (const result of uploadResults) {
+    if (result.error) {
+      console.error('Error subiendo imagen:', result.error);
+      // Si una imagen falla, lanzamos un error para detener todo el proceso
+      throw new Error(`Error al subir una de las imágenes: ${result.error.message}`);
+    }
+
+    if (result.data) {
+      // Obtenemos la URL pública del archivo recién subido
+      const { data: publicUrlData } = supabaseClient.storage
+        .from('fotos_resenas')
+        .getPublicUrl(result.data.path);
+      urls.push(publicUrlData.publicUrl);
+    }
+  }
+
+  return urls;
+}
+
 
 // =========================================================================
 // 2. INICIALIZACIÓN DE LA PÁGINA
@@ -22,6 +64,36 @@ document.addEventListener('navAuthReady', async () => {
     for (let i = 0; i < formElements.length; i++) {
       formElements[i].disabled = true;
     }
+  }
+
+  // ---- Lógica para la subida y previsualización de imágenes ----
+  const imageInput = document.getElementById('imagenes');
+  const previewsContainer = document.getElementById('image-previews');
+
+  if (imageInput && previewsContainer) {
+    imageInput.addEventListener('change', (event) => {
+      const files = Array.from(event.target.files);
+      previewsContainer.innerHTML = ''; // Limpiar vistas previas anteriores
+
+      if (files.length > MAX_IMAGES) {
+        alert(`Puedes subir un máximo de ${MAX_IMAGES} imágenes.`);
+        imageInput.value = ''; // Limpiar la selección
+        return;
+      }
+
+      files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-full h-24 object-cover rounded-md';
+            previewsContainer.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
   }
 
   // ---- Cargar Restaurantes para el buscador ----
@@ -127,7 +199,7 @@ async function cargarDatosResena() {
     try {
         const { data: resena, error } = await supabaseClient
             .from('resenas')
-            .select('*, restaurantes(nombre, direccion)')
+            .select('*, restaurantes(nombre, direccion), urls_imagenes')
             .eq('id', editReviewId)
             .eq('id_usuario', currentUserId)
             .single();
@@ -150,6 +222,18 @@ async function cargarDatosResena() {
         seleccionarRestaurante(resena.id_restaurante, restDisplayText);
 
         document.getElementById('comentario').value = resena.comentario;
+
+        // Mostrar imágenes existentes
+        const previewsContainer = document.getElementById('image-previews');
+        if (resena.urls_imagenes && previewsContainer) {
+            previewsContainer.innerHTML = '';
+            resena.urls_imagenes.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'w-full h-24 object-cover rounded-md';
+                previewsContainer.appendChild(img);
+            });
+        }
 
         const checkStar = (prefix, value) => {
             if (value === null || value === undefined) return;
@@ -196,30 +280,54 @@ if(form) {
       submitBtn.disabled = true;
       submitBtn.textContent = editReviewId ? 'Guardando...' : 'Publicando...';
 
-      const comentario = document.getElementById('comentario').value;
-      const comida = parseFloat(document.querySelector('input[name="comida"]:checked')?.value || 0);
-      const atencion = parseFloat(document.querySelector('input[name="atencion"]:checked')?.value || 0);
-      const precio = parseFloat(document.querySelector('input[name="precio"]:checked')?.value || 0);
-      const ambiente = parseFloat(document.querySelector('input[name="ambiente"]:checked')?.value || 0);
-
-      let general = 0;
-      if (comida > 0 && atencion > 0 && precio > 0 && ambiente > 0) {
-          general = (comida + atencion + precio + ambiente) / 4;
-      }
-
-      const resenaData = {
-        id_restaurante: restauranteId,
-        id_usuario: currentUserId,
-        puntuacion_general: general,
-        calidad_comida: comida,
-        atencion: atencion,
-        precio: precio,
-        ambiente: ambiente,
-        comentario: comentario
-      };
-
       try {
+        // 1. Subir las imágenes a Supabase Storage
+        const imageInput = document.getElementById('imagenes');
+        const filesToUpload = imageInput ? Array.from(imageInput.files) : [];
+
+        // Validar de nuevo por si acaso
+        if (filesToUpload.length > MAX_IMAGES) {
+            alert(`Puedes subir un máximo de ${MAX_IMAGES} imágenes.`);
+            throw new Error("Demasiadas imágenes seleccionadas.");
+        }
+
+        const imageUrls = await uploadReviewImages(filesToUpload, currentUserId);
+
+        // 2. Recopilar el resto de los datos del formulario
+        const comentario = document.getElementById('comentario').value;
+        const comida = parseFloat(document.querySelector('input[name="comida"]:checked')?.value || 0);
+        const atencion = parseFloat(document.querySelector('input[name="atencion"]:checked')?.value || 0);
+        const precio = parseFloat(document.querySelector('input[name="precio"]:checked')?.value || 0);
+        const ambiente = parseFloat(document.querySelector('input[name="ambiente"]:checked')?.value || 0);
+
+        let general = 0;
+        if (comida > 0 && atencion > 0 && precio > 0 && ambiente > 0) {
+            general = (comida + atencion + precio + ambiente) / 4;
+        }
+
+        const resenaData = {
+          id_restaurante: restauranteId,
+          id_usuario: currentUserId,
+          puntuacion_general: general,
+          calidad_comida: comida,
+          atencion: atencion,
+          precio: precio,
+          ambiente: ambiente,
+          comentario: comentario,
+          urls_imagenes: imageUrls // Añadimos las URLs de las imágenes
+        };
+
+        // 3. Insertar o actualizar la reseña en la base de datos
         if (editReviewId) {
+            // Nota: Esta lógica simple REEMPLAZA las imágenes antiguas por las nuevas.
+            // Si no se suben nuevas imágenes, se mantendrán las antiguas si se cargaron y no se tocaron.
+            // Para una lógica de "reemplazo" más robusta, se necesitaría un manejo más complejo.
+            // Por ahora, si el usuario sube nuevas fotos, se guardarán esas.
+            const { data: existingReview } = await supabaseClient.from('resenas').select('urls_imagenes').eq('id', editReviewId).single();
+            if (imageUrls.length === 0 && existingReview.urls_imagenes) {
+                resenaData.urls_imagenes = existingReview.urls_imagenes;
+            }
+
             const { error } = await supabaseClient
                 .from('resenas')
                 .update(resenaData)
@@ -238,6 +346,8 @@ if(form) {
             alert("¡Reseña publicada con éxito!");
             form.reset();
             document.getElementById('restaurante-id').value = '';
+            const previewsContainer = document.getElementById('image-previews');
+            if (previewsContainer) previewsContainer.innerHTML = '';
             window.location.href = 'index.html';
         }
 

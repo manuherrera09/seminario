@@ -6,17 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ee179bec-4b88-4202-800a-425882757627" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/comunidad.html" beforeDir="false" afterPath="$PROJECT_DIR$/comunidad.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/empresas.html" beforeDir="false" afterPath="$PROJECT_DIR$/empresas.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/forgot-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/forgot-password.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/moderacion.html" beforeDir="false" afterPath="$PROJECT_DIR$/moderacion.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nosotros.html" beforeDir="false" afterPath="$PROJECT_DIR$/nosotros.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/perfil.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/perfil.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/resena.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/resena.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/restaurante.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/restaurante.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/perfil.html" beforeDir="false" afterPath="$PROJECT_DIR$/perfil.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registro.html" beforeDir="false" afterPath="$PROJECT_DIR$/registro.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/resena.html" beforeDir="false" afterPath="$PROJECT_DIR$/resena.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/reset-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/reset-password.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/restaurante.html" beforeDir="false" afterPath="$PROJECT_DIR$/restaurante.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -143,7 +137,7 @@
       <workItem from="1782517252719" duration="21036000" />
       <workItem from="1782597541694" duration="376000" />
       <workItem from="1782598676995" duration="1058000" />
-      <workItem from="1782601444393" duration="33799000" />
+      <workItem from="1782601444393" duration="40639000" />
     </task>
     <servers />
   </component>
