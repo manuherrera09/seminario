@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Restaurante - TrackEat</title>
+  <!-- Google Fonts: Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- Estilos del Modo Oscuro -->
   <link rel="stylesheet" href="css/dark-mode.css">
   <!-- Font Awesome para los iconos de redes sociales -->
@@ -12,13 +17,28 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configuración de Tailwind para usar Montserrat
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
 </head>
 <body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
 
 <nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
   <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
     <div class="flex items-center w-full md:w-auto justify-between">
-      <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
+      <a href="index.html" class="flex items-center gap-2 text-xl font-bold hover:text-red-200 transition">
+        TrackEat
+        <img src="img/Logo blanco chikito.png" alt="Logo TrackEat" class="h-10 relative -top-1">
+      </a>
     </div>
 
     <!-- Barra de búsqueda en la navegación -->

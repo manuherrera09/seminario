@@ -1,42 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Empresas - TrackEat</title>
-  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome para los iconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Empresas - TrackEat</title>
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuración de Tailwind para usar Montserrat
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+<body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
 
 <nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
-  <div class="container mx-auto flex justify-between items-center">
-    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
-    <div class="flex items-center space-x-4">
-      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
-      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+    <div class="container mx-auto flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-2 text-xl font-bold hover:text-red-200 transition">
+            TrackEat
+            <img src="img/Logo blanco chikito.png" alt="Logo TrackEat" class="h-10 relative -top-1">
+        </a>
+        <div class="flex items-center space-x-4">
+            <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+            <a href="resena.html" class="hover:text-red-200 transition">Dejar Reseña</a>
+            <a href="perfil.html" class="hover:text-red-200 transition">Mi Perfil</a>
+        </div>
     </div>
-  </div>
 </nav>
 
-<main class="container mx-auto p-6 flex-grow flex items-center justify-center">
-    <div class="text-center">
-        <i class="fas fa-tools text-6xl text-gray-300 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Sección en Construcción</h1>
-        <p class="text-gray-500">Estamos trabajando en herramientas especiales para dueños de restaurantes.</p>
-        <p class="text-gray-500 mt-2">¡Vuelve pronto!</p>
+<main class="container mx-auto p-6 flex-grow">
+    <div class="bg-[var(--color-surface)] p-6 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-[var(--color-text-primary)] mb-6 border-b border-[var(--color-border)] pb-4">Para Empresas</h1>
+
+        <section id="reclama" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Reclama tu Restaurante</h2>
+            <p class="text-[var(--color-text-secondary)]">¿Eres el dueño de un restaurante listado en TrackEat? ¡Toma el control de tu perfil! Al reclamar tu negocio, podrás responder a las reseñas, actualizar la información de tu local y acceder a estadísticas exclusivas sobre tus clientes.</p>
+        </section>
+
+        <section id="publicidad" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Publicidad</h2>
+            <p class="text-[var(--color-text-secondary)]">Llega a miles de amantes de la comida en tu área. Ofrecemos paquetes de publicidad flexibles para destacar tu restaurante en nuestra plataforma, desde aparecer en la sección de "Tendencias" hasta campañas personalizadas en redes sociales.</p>
+        </section>
+
+        <section id="business" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">TrackEat for Business</h2>
+            <p class="text-[var(--color-text-secondary)]">Nuestra plataforma para negocios te da las herramientas para entender a tu clientela. Analiza las calificaciones detalladas, identifica tus puntos fuertes y descubre áreas de mejora. Convierte las opiniones en acciones y haz crecer tu negocio.</p>
+        </section>
+
+        <section id="soporte-duenos" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Soporte para Dueños</h2>
+            <p class="text-[var(--color-text-secondary)]">Nuestro equipo de soporte para empresas está disponible para ayudarte a sacar el máximo provecho de TrackEat. Si tienes preguntas sobre cómo gestionar tu perfil, entender las estadísticas o configurar una campaña publicitaria, contáctanos en <a href="mailto:empresas@trackeat.com" class="text-[#c41200] hover:underline">empresas@trackeat.com</a>.</p>
+        </section>
     </div>
 </main>
 
-<footer class="bg-gray-800 text-white pt-12 pb-8 mt-12 relative z-10">
+<footer class="bg-gray-800 text-white pt-12 pb-6 mt-12">
   <div class="container mx-auto px-6">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-gray-700 pb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 border-b border-gray-700 pb-8">
 
-      <!-- Columna 1: Marca -->
-      <div class="md:col-span-1 flex items-start">
-        <h3 class="text-3xl font-bold text-red-400 mt-[-4px]">TrackEat</h3>
+      <!-- Columna 1: Marca y Logo -->
+      <div class="md:col-span-1 flex flex-col items-start">
+        <h3 class="text-3xl font-bold text-red-400 mt-[-4px] mb-4">TrackEat</h3>
+        <img src="img/Track Eat (Abajo).png" alt="Logo TrackEat" class="w-24 opacity-80 hover:opacity-100 transition-opacity">
       </div>
 
       <!-- Columna 2: Nosotros -->
@@ -73,21 +112,34 @@
         </ul>
       </div>
 
+      <!-- Columna 5: Redes -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Síguenos en nuestras redes</h4>
+        <div class="flex space-x-5">
+          <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-instagram"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Instagram</span>
+          </a>
+          <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-twitter"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Twitter</span>
+          </a>
+          <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-2xl flex flex-col items-center group">
+            <i class="fa-brands fa-tiktok"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">TikTok</span>
+          </a>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Redes Sociales y Copyright -->
-    <div class="mt-8 flex flex-col md:flex-row justify-between items-center">
-      <div class="text-gray-500 text-sm mb-4 md:mb-0">
-        &copy; 2026 TrackEat. Todos los derechos reservados.
-      </div>
-      <div class="flex space-x-6">
-        <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-xl"><i class="fab fa-instagram"></i></a>
-        <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-xl"><i class="fab fa-twitter"></i></a>
-        <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-tiktok"></i></a>
-      </div>
+    <!-- Copyright (Centrado) -->
+    <div class="mt-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
     </div>
   </div>
 </footer>
 
+<script src="js/app.js?v=2"></script>
 </body>
 </html>

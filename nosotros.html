@@ -1,149 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nosotros - TrackEat</title>
-  <!--suppress HtmlUnknownTarget, JSUnresolvedLibraryURL -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome para los iconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Nosotros - TrackEat</title>
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuración de Tailwind para usar Montserrat
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+<body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
 
 <nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
-  <div class="container mx-auto flex justify-between items-center">
-    <a href="index.html" class="text-xl font-bold hover:text-red-200 transition">TrackEat</a>
-    <div class="flex items-center space-x-4">
-      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
-      <a href="resena.html" class="bg-white text-[#c41200] px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Dejar Reseña</a>
+    <div class="container mx-auto flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-2 text-xl font-bold hover:text-red-200 transition">
+            TrackEat
+            <img src="img/Logo blanco chikito.png" alt="Logo TrackEat" class="h-10 relative -top-1">
+        </a>
+        <div class="flex items-center space-x-4">
+            <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+            <a href="resena.html" class="hover:text-red-200 transition">Dejar Reseña</a>
+            <a href="perfil.html" class="hover:text-red-200 transition">Mi Perfil</a>
+        </div>
     </div>
-  </div>
 </nav>
 
-<main class="container mx-auto p-6 flex-grow max-w-4xl mt-8">
+<main class="container mx-auto p-6 flex-grow">
+    <div class="bg-[var(--color-surface)] p-6 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-[var(--color-text-primary)] mb-6 border-b border-[var(--color-border)] pb-4">Sobre Nosotros</h1>
 
-  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
-    <h1 class="text-4xl font-bold text-gray-800 mb-6 border-b pb-4" id="que-es-trackeat">Qué es TrackEat</h1>
+        <section id="que-es-trackeat" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">¿Qué es TrackEat?</h2>
+            <p class="text-[var(--color-text-secondary)]">TrackEat es una plataforma dedicada a conectar a los amantes de la comida con las mejores experiencias gastronómicas. Nuestra misión es simple: ayudarte a descubrir nuevos lugares, compartir tus opiniones y formar parte de una comunidad apasionada por la buena comida.</p>
+        </section>
 
-    <div class="space-y-4 text-gray-700 leading-relaxed text-lg">
-        <p><strong>TrackEat</strong> es una plataforma nacida como un proyecto académico universitario, diseñada para transformar la manera en que los usuarios descubren y evalúan experiencias gastronómicas. Nuestra misión es conectar a los comensales con los mejores lugares para comer, basándonos en un pilar fundamental: <strong>la transparencia y la autenticidad de las opiniones.</strong></p>
+        <section id="quienes-somos" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">¿Quiénes Somos?</h2>
+            <p class="text-[var(--color-text-secondary)]">Somos un equipo de desarrolladores, diseñadores y, sobre todo, foodies. Nos encanta explorar, probar nuevos platos y compartir nuestras recomendaciones. Creamos TrackEat porque creemos que las opiniones honestas y detalladas son la mejor guía para encontrar tu próxima comida inolvidable.</p>
+        </section>
 
-        <p>A diferencia de otros sitios tradicionales, en TrackEat nos enfocamos en combatir las reseñas falsas y los comentarios sesgados. Queremos que cada puntuación, foto y comentario refleje una experiencia real, ayudando a los usuarios a <strong>tomar decisiones informadas</strong> y permitiendo que los comercios gastronómicos destaquen por su verdadera calidad de servicio.</p>
+        <section id="nuestra-mision" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Nuestra Misión</h2>
+            <p class="text-[var(--color-text-secondary)]">Nuestra misión es empoderar a los comensales, dándoles las herramientas para tomar decisiones informadas y compartir sus experiencias de una manera significativa. Queremos que cada reseña cuente y que cada restaurante tenga la oportunidad de brillar por lo que mejor hace.</p>
+        </section>
+
+        <section id="contacto" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Contacto</h2>
+            <p class="text-[var(--color-text-secondary)]">¿Tienes alguna pregunta, sugerencia o simplemente quieres saludar? ¡Nos encantaría saber de ti! Puedes encontrarnos en nuestras redes sociales o enviarnos un correo a <a href="mailto:contacto@trackeat.com" class="text-[#c41200] hover:underline">contacto@trackeat.com</a>.</p>
+        </section>
     </div>
-  </div>
-
-  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="quienes-somos">Quiénes somos</h2>
-    <p class="text-gray-700 leading-relaxed text-lg mb-8 text-center md:text-left">
-      Somos un grupo de estudiantes, unidos por el desafío de desarrollar una solución digital innovadora para el sector gastronómico.
-    </p>
-
-    <!-- Contenedor para las fotos del equipo (6 columnas en pantallas grandes, 3 en móviles) -->
-    <div class="grid grid-cols-3 lg:grid-cols-6 gap-6">
-
-      <!-- Miembro 1 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/1-Joaquin Argüello.jpg" alt="Joaquin Argüello" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Joaquin<br>Argüello</h3>
-      </div>
-
-      <!-- Miembro 2 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/2-Mateo Duran.jpg" alt="Mateo Duran" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Mateo<br>Duran</h3>
-      </div>
-
-      <!-- Miembro 3 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/3- Martin Guimpel.jpg" alt="Martin Guimpel" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Martin<br>Guimpel</h3>
-      </div>
-
-      <!-- Miembro 4 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/4-Manuel Herrera.jpg" alt="Manuel Herrera" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Manuel<br>Herrera</h3>
-      </div>
-
-      <!-- Miembro 5 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/5-Lautaro Miño.jpg" alt="Lautaro Miño" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Lautaro<br>Miño</h3>
-      </div>
-
-      <!-- Miembro 6 -->
-      <div class="flex flex-col items-center text-center">
-        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 bg-gray-200 rounded-full flex justify-center items-center overflow-hidden mb-3 border-4 border-gray-100 shadow-sm">
-          <img src="img/6- Matias Piña.jpg" alt="Matias Piña" class="w-full h-full object-cover">
-        </div>
-        <h3 class="font-bold text-gray-800 text-sm leading-tight">Matias<br>Piña</h3>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="nuestra-mision">Nuestra misión</h2>
-    <p class="text-gray-700 leading-relaxed text-lg">
-      Nuestra misión es <strong>democratizar la opinión gastronómica.</strong> Buscamos construir un espacio digital donde la voz de cada comensal tenga valor real y donde los usuarios puedan descubrir su próximo lugar favorito sin sorpresas. Nos proponemos erradicar la desinformación en las reseñas online mediante una plataforma transparente, impulsando al mismo tiempo a los restaurantes locales a mejorar y conectar de forma honesta con su comunidad.
-    </p>
-  </div>
-
-  <div class="bg-white p-8 rounded-lg shadow-md mb-8">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4" id="contacto">Contacto</h2>
-    <p class="text-gray-600 mb-6">
-      ¿Tienes alguna duda, sugerencia o problema con la plataforma? Envíanos un mensaje y nos pondremos en contacto contigo lo antes posible.
-    </p>
-
-    <!-- Formulario de Contacto Mock -->
-    <form action="#" method="POST" class="max-w-xl mx-auto space-y-5" onsubmit="event.preventDefault(); alert('¡Gracias por tu mensaje! (Modo Mock)');">
-
-      <div>
-        <label for="email_contacto" class="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-envelope text-gray-400"></i>
-          </div>
-          <input type="email" id="email_contacto" name="email_contacto" required
-                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition"
-                 placeholder="tucorreo@ejemplo.com">
-        </div>
-      </div>
-
-      <div>
-        <label for="mensaje_contacto" class="block text-sm font-semibold text-gray-700 mb-1">Tu Mensaje</label>
-        <textarea id="mensaje_contacto" name="mensaje_contacto" rows="5" required
-                  class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41200] focus:border-transparent transition resize-y"
-                  placeholder="Escribe tu mensaje aquí..."></textarea>
-      </div>
-
-      <button type="submit" class="w-full sm:w-auto bg-[#c41200] text-white font-bold py-2 px-6 rounded-md hover:bg-red-800 transition shadow-sm flex items-center justify-center gap-2">
-        <i class="fas fa-paper-plane"></i> Enviar Mensaje
-      </button>
-
-    </form>
-  </div>
-
 </main>
 
-<footer class="bg-gray-800 text-white pt-12 pb-8 mt-12 relative z-10">
+<footer class="bg-gray-800 text-white pt-12 pb-6 mt-12">
   <div class="container mx-auto px-6">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-gray-700 pb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 border-b border-gray-700 pb-8">
 
-      <!-- Columna 1: Marca -->
-      <div class="md:col-span-1 flex items-start">
-        <h3 class="text-3xl font-bold text-red-400 mt-[-4px]">TrackEat</h3>
+      <!-- Columna 1: Marca y Logo -->
+      <div class="md:col-span-1 flex flex-col items-start">
+        <h3 class="text-3xl font-bold text-red-400 mt-[-4px] mb-4">TrackEat</h3>
+        <img src="img/Track Eat (Abajo).png" alt="Logo TrackEat" class="w-24 opacity-80 hover:opacity-100 transition-opacity">
       </div>
 
       <!-- Columna 2: Nosotros -->
@@ -180,21 +112,34 @@
         </ul>
       </div>
 
+      <!-- Columna 5: Redes -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Síguenos en nuestras redes</h4>
+        <div class="flex space-x-5">
+          <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-instagram"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Instagram</span>
+          </a>
+          <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-twitter"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Twitter</span>
+          </a>
+          <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-2xl flex flex-col items-center group">
+            <i class="fa-brands fa-tiktok"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">TikTok</span>
+          </a>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Redes Sociales y Copyright -->
-    <div class="mt-8 flex flex-col md:flex-row justify-between items-center">
-      <div class="text-gray-500 text-sm mb-4 md:mb-0">
-        &copy; 2026 TrackEat. Todos los derechos reservados.
-      </div>
-      <div class="flex space-x-6">
-        <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-xl"><i class="fab fa-instagram"></i></a>
-        <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-xl"><i class="fab fa-twitter"></i></a>
-        <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-xl"><i class="fa-brands fa-tiktok"></i></a>
-      </div>
+    <!-- Copyright (Centrado) -->
+    <div class="mt-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
     </div>
   </div>
 </footer>
 
+<script src="js/app.js?v=2"></script>
 </body>
 </html>
