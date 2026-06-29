@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee179bec-4b88-4202-800a-425882757627" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/forgot-password.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/reset-password.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/login.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +131,7 @@
       <workItem from="1782517252719" duration="21036000" />
       <workItem from="1782597541694" duration="376000" />
       <workItem from="1782598676995" duration="1058000" />
-      <workItem from="1782601444393" duration="18461000" />
+      <workItem from="1782601444393" duration="19649000" />
     </task>
     <servers />
   </component>
