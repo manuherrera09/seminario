@@ -247,6 +247,53 @@
   </div>
 </footer>
 
+<!-- Modal para Vista Rápida de Reseña -->
+<div id="review-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-center items-center p-4">
+  <div class="bg-[var(--color-surface)] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <!-- Cabecera del Modal -->
+    <div class="flex justify-between items-center p-4 border-b border-[var(--color-border)]">
+      <h3 class="text-lg font-bold text-[var(--color-text-primary)]" id="modal-restaurant-name"></h3>
+      <button id="modal-close-btn" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div class="p-6 overflow-y-auto">
+      <!-- Fila Superior: Perfil, Puntuación y Audio -->
+      <div class="flex justify-between items-start gap-4 mb-4">
+        <!-- Izquierda: Perfil de Usuario -->
+        <div class="flex items-center gap-4">
+          <div id="modal-user-avatar" class="w-12 h-12 rounded-full bg-red-100 text-[#c41200] flex-shrink-0 flex items-center justify-center font-bold text-xl"></div>
+          <div>
+            <p class="font-bold text-[var(--color-text-primary)]" id="modal-user-name"></p>
+            <p class="text-sm text-[var(--color-text-secondary)]" id="modal-review-date"></p>
+          </div>
+        </div>
+        <!-- Derecha: Puntuación y Audio -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <span id="modal-rating" class="bg-yellow-100 text-yellow-800 text-lg font-semibold px-3 py-1 rounded"></span>
+          <button id="modal-audio-btn" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition">
+            <i class="fas fa-volume-up text-xl"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Comentario -->
+      <p class="text-[var(--color-text-primary)] leading-relaxed my-6" id="modal-comment"></p>
+
+      <!-- Puntuaciones Detalladas -->
+      <div class="mt-6 pt-4 border-t border-[var(--color-border)] flex flex-wrap justify-between text-sm">
+        <span id="modal-rating-comida" class="flex items-center gap-2 text-[var(--color-text-secondary)]"><i class="fas fa-utensils w-4 text-center"></i> Comida: <strong class="text-[var(--color-text-primary)]"></strong></span>
+        <span id="modal-rating-atencion" class="flex items-center gap-2 text-[var(--color-text-secondary)]"><i class="fas fa-concierge-bell w-4 text-center"></i> Atención: <strong class="text-[var(--color-text-primary)]"></strong></span>
+        <span id="modal-rating-precio" class="flex items-center gap-2 text-[var(--color-text-secondary)]"><i class="fas fa-money-bill-wave w-4 text-center"></i> Precio: <strong class="text-[var(--color-text-primary)]"></strong></span>
+        <span id="modal-rating-ambiente" class="flex items-center gap-2 text-[var(--color-text-secondary)]"><i class="fas fa-music w-4 text-center"></i> Ambiente: <strong class="text-[var(--color-text-primary)]"></strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js?v=3"></script>
 

@@ -13,6 +13,7 @@ let perfilesCacheados = [];
 let currentUserId = null;
 let currentUserProfile = null;
 let navAuthReady = false;
+let todasLasResenasRecientes = []; // Cache para las reseñas
 
 // Evento principal para App.js y para disparar la inicialización de otras páginas
 document.addEventListener('DOMContentLoaded', async () => {
@@ -51,6 +52,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---- Cargar reseñas recientes si estamos en el index ----
   if (document.getElementById('recent-reviews-container')) {
     cargarResenasRecientes();
+  }
+
+  // ---- Configurar Modal de Reseñas ----
+  const modal = document.getElementById('review-modal');
+  const closeModalBtn = document.getElementById('modal-close-btn');
+  if (modal && closeModalBtn) {
+      closeModalBtn.addEventListener('click', cerrarModalDeResena);
+      modal.addEventListener('click', (e) => {
+          // Si se hace clic en el fondo oscuro, se cierra el modal
+          if (e.target.id === 'review-modal') {
+              cerrarModalDeResena();
+          }
+      });
   }
 });
 
@@ -567,22 +581,24 @@ async function cargarResenasRecientes() {
       .select(`
         *,
         restaurantes (nombre),
-        perfiles (nombre_usuario)
+        perfiles (nombre_usuario, imagen_url)
       `)
       .order('created_at', { ascending: false })
       .limit(9);
 
     if (error) throw error;
 
+    todasLasResenasRecientes = resenasData || []; // Guardar en caché
+
     container.innerHTML = '';
 
-    if (!resenasData || resenasData.length === 0) {
+    if (todasLasResenasRecientes.length === 0) {
       container.innerHTML = '<p class="text-[var(--color-text-secondary)] col-span-full text-center py-8">No hay reseñas recientes aún.</p>';
       return;
     }
 
     // 2. Extraer los IDs de las reseñas cargadas para buscar sus votos
-    const resenasIds = resenasData.map(r => r.id);
+    const resenasIds = todasLasResenasRecientes.map(r => r.id);
     let votosData = [];
 
     if (resenasIds.length > 0) {
@@ -596,42 +612,28 @@ async function cargarResenasRecientes() {
         }
     }
 
-    resenasData.forEach(resena => {
+    todasLasResenasRecientes.forEach(resena => {
       const restauranteNombre = resena.restaurantes ? resena.restaurantes.nombre : 'Restaurante Desconocido';
       const usuarioNombre = resena.perfiles && resena.perfiles.nombre_usuario ? resena.perfiles.nombre_usuario : 'Usuario Anónimo';
       const restauranteId = resena.id_restaurante || resena.restaurante_id;
       const usuarioId = resena.id_usuario;
 
-      // Validación más segura de los ratings para evitar posibles problemas con toFixed()
       let ratingTotal = 'N/A';
-      if (resena.puntuacion_general !== null && resena.puntuacion_general !== undefined) {
+      if (resena.puntuacion_general !== null) {
          ratingTotal = Number(resena.puntuacion_general).toFixed(1);
       }
 
-      const comidaRating = (resena.calidad_comida !== null && resena.calidad_comida !== undefined) ? resena.calidad_comida + ' ★' : 'N/A';
-      const atencionRating = (resena.atencion !== null && resena.atencion !== undefined) ? resena.atencion + ' ★' : 'N/A';
-      const precioRating = (resena.precio !== null && resena.precio !== undefined) ? resena.precio + ' ★' : 'N/A';
-      const ambienteRating = (resena.ambiente !== null && resena.ambiente !== undefined) ? resena.ambiente + ' ★' : 'N/A';
-
-      // Calcular likes y dislikes para esta reseña
       const misVotos = votosData.filter(v => v.resena_id === resena.id);
       const likesCount = misVotos.filter(v => v.tipo === 'like').length;
       const dislikesCount = misVotos.filter(v => v.tipo === 'dislike').length;
-
-      // Determinar si el usuario actual ya votó esta reseña
-      let userVoto = null;
-      if (currentUserId) {
-          const votoUsuario = misVotos.find(v => v.usuario_id === currentUserId);
-          if (votoUsuario) {
-              userVoto = votoUsuario.tipo; // 'like' o 'dislike'
-          }
-      }
-
+      const userVoto = currentUserId ? misVotos.find(v => v.usuario_id === currentUserId)?.tipo : null;
       const likeClass = userVoto === 'like' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50';
       const dislikeClass = userVoto === 'dislike' ? 'text-red-600 bg-red-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50';
 
       const resenaDiv = document.createElement('div');
-      resenaDiv.className = "bg-[var(--color-surface)] p-6 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full relative z-10";
+      resenaDiv.className = "bg-[var(--color-surface)] p-6 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full relative z-10 cursor-pointer";
+      resenaDiv.setAttribute('data-review-id', resena.id);
+      resenaDiv.addEventListener('click', () => abrirModalDeResena(resena.id));
 
       resenaDiv.innerHTML = `
         <div class="flex justify-between items-start mb-4">
@@ -641,177 +643,172 @@ async function cargarResenasRecientes() {
           </div>
           <div class="flex items-center gap-3">
             <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">${ratingTotal} ★</span>
-            <button onclick="leerResena('${resena.comentario.replace(/'/g, "\\'")}')" class="text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
+            <button class="btn-audio text-[var(--color-text-secondary)] hover:text-[#c41200] transition" title="Leer reseña en voz alta">
                 <i class="fas fa-volume-up"></i>
             </button>
           </div>
         </div>
-        <p class="text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow">${resena.comentario || 'Sin comentario'}</p>
-        <div class="text-xs text-[var(--color-text-secondary)] flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border)] mb-3">
-           <span class="flex items-center gap-1" title="Calidad de la Comida"><i class="fas fa-utensils w-4 text-center text-gray-400"></i> ${comidaRating}</span>
-           <span class="flex items-center gap-1" title="Atención"><i class="fas fa-concierge-bell w-4 text-center text-gray-400"></i> ${atencionRating}</span>
-           <span class="flex items-center gap-1" title="Precio"><i class="fas fa-money-bill-wave w-4 text-center text-gray-400"></i> ${precioRating}</span>
-           <span class="flex items-center gap-1" title="Ambiente"><i class="fas fa-music w-4 text-center text-gray-400"></i> ${ambienteRating}</span>
-        </div>
-
-        <!-- Botones de Voto -->
-        <div class="flex justify-end gap-2 pt-2 border-t border-gray-50">
-            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20" data-resena-id="${resena.id}" data-autor-id="${resena.id_usuario}">
-                <i class="fas fa-thumbs-up pointer-events-none"></i> <span class="like-count pointer-events-none">${likesCount}</span>
+        <p class="text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow pointer-events-none">${resena.comentario || 'Sin comentario'}</p>
+        <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
+            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20">
+                <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
             </button>
-            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20" data-resena-id="${resena.id}">
-                <i class="fas fa-thumbs-down pointer-events-none"></i> <span class="dislike-count pointer-events-none">${dislikesCount}</span>
+            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20">
+                <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
             </button>
-            <button onclick="handleReportReview('${resena.id}', '${resena.id_usuario}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold" title="Denunciar reseña">
-                <i class="fas fa-flag pointer-events-none"></i>
+            <button class="btn-denunciar text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold relative z-20" title="Denunciar reseña">
+                <i class="fas fa-flag"></i>
             </button>
         </div>
       `;
       container.appendChild(resenaDiv);
-    });
 
-    // Configurar eventos de los botones de voto recién creados
-    configurarVotos();
+      // Re-asignar eventos a los botones para que no disparen el click del contenedor padre
+      resenaDiv.querySelector('a').addEventListener('click', (e) => e.stopPropagation());
+      resenaDiv.querySelectorAll('p a').forEach(a => a.addEventListener('click', (e) => e.stopPropagation()));
+      resenaDiv.querySelector('.btn-audio').addEventListener('click', (e) => { e.stopPropagation(); leerResena(resena.comentario); });
+      resenaDiv.querySelector('.btn-like').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'like', e.currentTarget); });
+      resenaDiv.querySelector('.btn-dislike').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'dislike', e.currentTarget); });
+      resenaDiv.querySelector('.btn-denunciar').addEventListener('click', (e) => { e.stopPropagation(); handleReportReview(resena.id, resena.id_usuario); });
+    });
 
   } catch (err) {
     console.error("Error al cargar reseñas recientes:", err);
-    // Mostrar el error completo en pantalla para depuración
-    container.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">
-      <strong>Error al cargar las reseñas:</strong><br/>
-      ${err.message || JSON.stringify(err)}
-      <br/><em>(Abre la consola para más detalles)</em>
-    </p>`;
+    container.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">Error al cargar las reseñas.</p>`;
   }
 }
 
+function abrirModalDeResena(reviewId) {
+    const resena = todasLasResenasRecientes.find(r => r.id === reviewId);
+    if (!resena) return;
+
+    const modal = document.getElementById('review-modal');
+
+    // Llenar datos
+    document.getElementById('modal-restaurant-name').innerHTML = `<a href="restaurante.html?id=${resena.id_restaurante}" class="hover:underline">${resena.restaurantes.nombre}</a>`;
+    document.getElementById('modal-user-name').innerHTML = `<a href="perfil.html?id=${resena.id_usuario}" class="hover:underline">${resena.perfiles.nombre_usuario}</a>`;
+    document.getElementById('modal-review-date').textContent = new Date(resena.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('modal-rating').innerHTML = `${Number(resena.puntuacion_general).toFixed(1)} ★`;
+    document.getElementById('modal-comment').textContent = resena.comentario;
+
+    // Asignar evento al botón de audio del modal
+    const modalAudioBtn = document.getElementById('modal-audio-btn');
+    modalAudioBtn.onclick = () => leerResena(resena.comentario);
+
+    // Avatar
+    const avatarContainer = document.getElementById('modal-user-avatar');
+    if (resena.perfiles.imagen_url) {
+        avatarContainer.innerHTML = `<a href="perfil.html?id=${resena.id_usuario}"><img src="${resena.perfiles.imagen_url}" alt="Foto de ${resena.perfiles.nombre_usuario}" class="w-full h-full object-cover rounded-full"></a>`;
+    } else {
+        avatarContainer.innerHTML = `<a href="perfil.html?id=${resena.id_usuario}" class="w-full h-full flex items-center justify-center">${resena.perfiles.nombre_usuario.charAt(0).toUpperCase()}</a>`;
+    }
+
+    // Ratings detallados
+    document.querySelector('#modal-rating-comida strong').textContent = `${resena.calidad_comida}/5`;
+    document.querySelector('#modal-rating-atencion strong').textContent = `${resena.atencion}/5`;
+    document.querySelector('#modal-rating-precio strong').textContent = `${resena.precio}/5`;
+    const ambienteRatingEl = document.getElementById('modal-rating-ambiente');
+    if (resena.ambiente) {
+        ambienteRatingEl.classList.remove('hidden');
+        ambienteRatingEl.querySelector('strong').textContent = `${resena.ambiente}/5`;
+    } else {
+        ambienteRatingEl.classList.add('hidden');
+    }
+
+    // Mostrar modal
+    modal.classList.remove('hidden');
+}
+
+function cerrarModalDeResena() {
+    const modal = document.getElementById('review-modal');
+    modal.classList.add('hidden');
+    // Detener la lectura de voz si se está reproduciendo al cerrar el modal
+    window.speechSynthesis.cancel();
+}
+
+
 // Lógica universal de votos para el archivo app.js
 function configurarVotos() {
-    const btnLikes = document.querySelectorAll('.btn-like');
-    const btnDislikes = document.querySelectorAll('.btn-dislike');
+    // Esta función ahora está vacía porque los listeners se añaden dinámicamente en cargarResenasRecientes
+}
 
-    const procesarVoto = async (resenaId, tipoVotoDeseado, botonClickado) => {
-        if (!currentUserId) {
-            alert("Debes iniciar sesión para votar.");
-            window.location.href = 'login.html';
-            return;
-        }
+async function procesarVoto(resenaId, tipoVotoDeseado, botonClickado) {
+    if (!currentUserId) {
+        alert("Debes iniciar sesión para votar.");
+        window.location.href = 'login.html';
+        return;
+    }
 
-        const contenedorResena = botonClickado.closest('div.flex.justify-end, .flex.items-center.gap-2');
-        if (!contenedorResena) return;
+    const contenedorBotones = botonClickado.parentElement;
+    const btnLike = contenedorBotones.querySelector('.btn-like');
+    const btnDislike = contenedorBotones.querySelector('.btn-dislike');
+    const resena = todasLasResenasRecientes.find(r => r.id === resenaId);
+    const autorId = resena ? resena.id_usuario : null;
 
-        const btnLike = contenedorResena.querySelector('.btn-like');
-        const btnDislike = contenedorResena.querySelector('.btn-dislike');
+    const spanLikeCount = btnLike.querySelector('.like-count');
+    const spanDislikeCount = btnDislike.querySelector('.dislike-count');
 
-        if (!btnLike || !btnDislike) return;
+    let isCurrentlyLiked = btnLike.classList.contains('text-green-600');
+    let isCurrentlyDisliked = btnDislike.classList.contains('text-red-600');
 
-        const autorId = btnLike.dataset.autorId; // Para la notificacion
+    let currentLikeCount = parseInt(spanLikeCount.textContent);
+    let currentDislikeCount = parseInt(spanDislikeCount.textContent);
 
-        const spanLikeCount = btnLike.querySelector('.like-count');
-        const spanDislikeCount = btnDislike.querySelector('.dislike-count');
+    btnLike.disabled = true;
+    btnDislike.disabled = true;
 
-        let isCurrentlyLiked = btnLike.classList.contains('text-green-600');
-        let isCurrentlyDisliked = btnDislike.classList.contains('text-red-600');
-
-        let currentLikeCount = parseInt(spanLikeCount.textContent);
-        let currentDislikeCount = parseInt(spanDislikeCount.textContent);
-
-        // Deshabilitar botones temporalmente
-        btnLike.disabled = true;
-        btnDislike.disabled = true;
-
-        try {
-            if (tipoVotoDeseado === 'like') {
-                if (isCurrentlyLiked) {
-                    // Quitar like
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
-
-                    // Borrar notificacion
-                    if(autorId && autorId !== currentUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
-                    }
-
-                    // UI Update
-                    btnLike.classList.remove('text-green-600', 'bg-green-50');
-                    btnLike.classList.add('text-gray-400');
-                    spanLikeCount.textContent = currentLikeCount - 1;
-                } else {
-                    // Poner like (Upsert para sobreescribir dislike si existe)
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'like' });
-
-                    // Crear notificacion si no es mia
-                    if (autorId && autorId !== currentUserId) {
-                        await supabaseClient.from('notificaciones').insert({
-                            usuario_id: autorId,
-                            actor_id: currentUserId,
-                            tipo: 'like',
-                            resena_id: resenaId
-                        });
-                    }
-
-                    // UI Update
-                    btnLike.classList.remove('text-gray-400');
-                    btnLike.classList.add('text-green-600', 'bg-green-50');
-                    spanLikeCount.textContent = currentLikeCount + 1;
-
-                    if (isCurrentlyDisliked) {
-                        btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                        btnDislike.classList.add('text-gray-400');
-                        spanDislikeCount.textContent = currentDislikeCount - 1;
-                    }
+    try {
+        if (tipoVotoDeseado === 'like') {
+            if (isCurrentlyLiked) {
+                await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
+                if(autorId && autorId !== currentUserId) {
+                   await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
                 }
-            } else if (tipoVotoDeseado === 'dislike') {
+                btnLike.classList.replace('text-green-600', 'text-gray-400');
+                btnLike.classList.replace('bg-green-50', 'hover:bg-green-50');
+                spanLikeCount.textContent = currentLikeCount - 1;
+            } else {
+                await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'like' });
+                if (autorId && autorId !== currentUserId) {
+                    await supabaseClient.from('notificaciones').insert({ usuario_id: autorId, actor_id: currentUserId, tipo: 'like', resena_id: resenaId });
+                }
+                btnLike.classList.replace('text-gray-400', 'text-green-600');
+                btnLike.classList.add('bg-green-50');
+                spanLikeCount.textContent = currentLikeCount + 1;
                 if (isCurrentlyDisliked) {
-                    // Quitar dislike
-                    await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
-                    // UI Update
-                    btnDislike.classList.remove('text-red-600', 'bg-red-50');
-                    btnDislike.classList.add('text-gray-400');
+                    btnDislike.classList.replace('text-red-600', 'text-gray-400');
+                    btnDislike.classList.replace('bg-red-50', 'hover:bg-red-50');
                     spanDislikeCount.textContent = currentDislikeCount - 1;
-                } else {
-                    // Poner dislike (Upsert)
-                    await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
-
-                    // Si paso de Like a Dislike, borramos la notificacion de Like
-                    if (isCurrentlyLiked && autorId && autorId !== currentUserId) {
-                       await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
-                    }
-
-                    // UI Update
-                    btnDislike.classList.remove('text-gray-400');
-                    btnDislike.classList.add('text-red-600', 'bg-red-50');
-                    spanDislikeCount.textContent = currentDislikeCount + 1;
-
-                    if (isCurrentlyLiked) {
-                        btnLike.classList.remove('text-green-600', 'bg-green-50');
-                        btnLike.classList.add('text-gray-400');
-                        spanLikeCount.textContent = currentLikeCount - 1;
-                    }
                 }
             }
-        } catch (err) {
-            console.error("Error al registrar voto:", err);
-            alert("No se pudo registrar tu voto.");
-        } finally {
-            btnLike.disabled = false;
-            btnDislike.disabled = false;
+        } else if (tipoVotoDeseado === 'dislike') {
+            if (isCurrentlyDisliked) {
+                await supabaseClient.from('resenas_votos').delete().match({ resena_id: resenaId, usuario_id: currentUserId });
+                btnDislike.classList.replace('text-red-600', 'text-gray-400');
+                btnDislike.classList.replace('bg-red-50', 'hover:bg-red-50');
+                spanDislikeCount.textContent = currentDislikeCount - 1;
+            } else {
+                await supabaseClient.from('resenas_votos').upsert({ resena_id: resenaId, usuario_id: currentUserId, tipo: 'dislike' });
+                if (isCurrentlyLiked && autorId && autorId !== currentUserId) {
+                   await supabaseClient.from('notificaciones').delete().match({ tipo: 'like', actor_id: currentUserId, resena_id: resenaId });
+                }
+                btnDislike.classList.replace('text-gray-400', 'text-red-600');
+                btnDislike.classList.add('bg-red-50');
+                spanDislikeCount.textContent = currentDislikeCount + 1;
+                if (isCurrentlyLiked) {
+                    btnLike.classList.replace('text-green-600', 'text-gray-400');
+                    btnLike.classList.replace('bg-green-50', 'hover:bg-green-50');
+                    spanLikeCount.textContent = currentLikeCount - 1;
+                }
+            }
         }
-    };
-
-    btnLikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // Evitar click en la tarjeta que lleva al restaurante
-            procesarVoto(btn.dataset.resenaId, 'like', btn);
-        });
-    });
-
-    btnDislikes.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // Evitar click en la tarjeta
-            procesarVoto(btn.dataset.resenaId, 'dislike', btn);
-        });
-    });
+    } catch (err) {
+        console.error("Error al registrar voto:", err);
+        alert("No se pudo registrar tu voto.");
+    } finally {
+        btnLike.disabled = false;
+        btnDislike.disabled = false;
+    }
 }
 
 // =========================================================================
