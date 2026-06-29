@@ -1,0 +1,39 @@
+/* Estilos para el carrusel de fondo en login.html */
+.bg-carousel {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.bg-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  transform: scale(1.05);
+}
+
+.bg-slide.active {
+  opacity: 1;
+}
+
+/* Overlay oscuro para las imágenes */
+.image-column::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+/* Para asegurar que el contenido de texto esté por encima del overlay */
+.image-column .text-content {
+  position: relative;
+  z-index: 2;
+}
