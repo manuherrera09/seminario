@@ -179,7 +179,7 @@ async function cargarDetallesRestaurante() {
         }
 
         // 2. Obtener todas las reseñas de este restaurante
-        // Hacemos JOIN con perfiles para obtener el nombre del usuario
+        // Hacemos JOIN con perfiles para obtener el nombre y la imagen del usuario
         const { data: resenas, error: resenasError } = await supabaseClient
             .from('resenas')
             .select(`
@@ -192,7 +192,7 @@ async function cargarDetallesRestaurante() {
                 precio,
                 ambiente,
                 id_usuario,
-                perfiles (nombre_usuario)
+                perfiles (nombre_usuario, imagen_url)
             `)
             .eq('id_restaurante', currentRestauranteId)
             .order('created_at', { ascending: false });
@@ -344,31 +344,34 @@ function renderizarResenas(sortMode) {
             day: 'numeric', month: 'long', year: 'numeric'
         });
 
-        // Extraer nombre de usuario del join
-        const nombreAutor = (resena.perfiles && resena.perfiles.nombre_usuario)
-                            ? resena.perfiles.nombre_usuario
-                            : 'Usuario Anónimo';
+        // Extraer datos del perfil del autor
+        const autor = resena.perfiles;
+        const nombreAutor = autor ? autor.nombre_usuario : 'Usuario Anónimo';
+        const imagenAutor = autor ? autor.imagen_url : null;
+
+        let avatarHtml;
+        if (imagenAutor) {
+            avatarHtml = `<img src="${imagenAutor}" alt="Foto de ${nombreAutor}" class="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-90 transition" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'" title="Ver perfil de ${nombreAutor}">`;
+        } else {
+            avatarHtml = `<div class="w-10 h-10 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center font-bold cursor-pointer hover:bg-red-200 transition" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'" title="Ver perfil de ${nombreAutor}">
+                            ${nombreAutor.charAt(0).toUpperCase()}
+                        </div>`;
+        }
 
         // Generar HTML de las estrellitas generales
         let starsHtml = '';
-
-        // Determinar cuántas estrellas llenas, medias o vacías dibujar
         const rating = resena.puntuacion_general || 0;
         const fullStars = Math.floor(rating);
         const hasHalfStar = (rating - fullStars) >= 0.25 && (rating - fullStars) < 0.75;
         const extraFullStar = (rating - fullStars) >= 0.75 ? 1 : 0;
-
         const totalFullStars = fullStars + extraFullStar;
 
         for(let i=1; i<=5; i++) {
             if(i <= totalFullStars) {
-                // Estrella llena
                 starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
             } else if(i === totalFullStars + 1 && hasHalfStar) {
-                // Media estrella
                 starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
             } else {
-                // Estrella vacía
                 starsHtml += '<i class="far fa-star text-gray-300"></i>';
             }
         }
@@ -388,9 +391,7 @@ function renderizarResenas(sortMode) {
         divResena.innerHTML = `
             <div class="flex justify-between items-start mb-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-100 text-[#c41200] rounded-full flex items-center justify-center font-bold cursor-pointer hover:bg-red-200 transition" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'" title="Ver perfil de ${nombreAutor}">
-                        ${nombreAutor.charAt(0).toUpperCase()}
-                    </div>
+                    ${avatarHtml}
                     <div>
                         <h4 class="font-bold text-[var(--color-text-primary)] cursor-pointer hover:underline hover:text-[#c41200]" onclick="window.location.href='perfil.html?id=${resena.id_usuario}'">${nombreAutor}</h4>
                         <p class="text-xs text-[var(--color-text-secondary)]">${fechaFormateada}</p>
