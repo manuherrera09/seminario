@@ -17,6 +17,16 @@ let todasLasResenasRecientes = []; // Cache para las reseñas
 
 // Evento principal para App.js y para disparar la inicialización de otras páginas
 document.addEventListener('DOMContentLoaded', async () => {
+  // ---- Ocultar botón de Inicio en la página de inicio ----
+  if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+      if (link.textContent.trim() === 'Inicio') {
+        link.classList.add('hidden');
+      }
+    });
+  }
+
   // ---- Carrusel ----
   const slides = document.querySelectorAll('.bg-slide');
   if (slides.length > 0) {
