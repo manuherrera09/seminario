@@ -455,6 +455,7 @@ function setupActionButtons(isFollowing) {
     const reportsCenterBtn = document.getElementById('reports-center-btn');
     const editFavsBtn = document.getElementById('edit-favs-btn');
     const followBtn = document.getElementById('follow-btn');
+    const reportUserBtn = document.getElementById('report-user-btn');
 
     if (currentUserId === viewedUserId) {
         // Es mi perfil
@@ -462,6 +463,7 @@ function setupActionButtons(isFollowing) {
         if (reportsCenterBtn) reportsCenterBtn.classList.remove('hidden');
         if (editFavsBtn) editFavsBtn.classList.remove('hidden');
         if (followBtn) followBtn.classList.add('hidden');
+        if (reportUserBtn) reportUserBtn.classList.add('hidden');
     } else {
         // Es el perfil de otro
         if (editProfileBtn) editProfileBtn.classList.add('hidden');
@@ -472,6 +474,52 @@ function setupActionButtons(isFollowing) {
             updateFollowButton(isFollowing);
             followBtn.addEventListener('click', toggleFollow);
         }
+        if (reportUserBtn) {
+            reportUserBtn.classList.remove('hidden');
+            reportUserBtn.addEventListener('click', handleReportUser);
+        }
+    }
+}
+
+async function handleReportUser() {
+    if (!currentUserId) {
+        alert('Debes iniciar sesión para denunciar a un usuario.');
+        return;
+    }
+
+    if (currentUserId === viewedUserId) {
+        alert('No puedes denunciarte a ti mismo.');
+        return;
+    }
+
+    const motivo = prompt("Por favor, describe el motivo de tu denuncia contra este usuario (ej: comportamiento abusivo, spam, etc.):");
+
+    if (motivo && motivo.trim() !== '') {
+        try {
+            const { error } = await supabaseClient
+                .from('denuncias')
+                .insert({
+                    resena_id: null, // Importante: sin reseña asociada
+                    denunciado_id: viewedUserId,
+                    denunciante_id: currentUserId,
+                    motivo: motivo.trim()
+                });
+
+            if (error) {
+                if (error.code === '23505') {
+                    alert('Ya has denunciado a este usuario anteriormente.');
+                } else {
+                    throw error;
+                }
+            } else {
+                alert('Gracias por tu denuncia. Nuestro equipo de moderación la revisará pronto.');
+            }
+        } catch (error) {
+            console.error('Error al enviar la denuncia:', error);
+            alert(`No se pudo procesar tu denuncia. Error: ${error.message}`);
+        }
+    } else if (motivo !== null) {
+        alert('Debes especificar un motivo para la denuncia.');
     }
 }
 

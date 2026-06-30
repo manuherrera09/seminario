@@ -649,7 +649,7 @@ async function cargarResenasRecientes() {
             </button>
           </div>
         </div>
-        <p class="text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow pointer-events-none">${resena.comentario || 'Sin comentario'}</p>
+        <p class="review-comment text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow pointer-events-none"></p>
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
             <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20">
                 <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
@@ -662,6 +662,7 @@ async function cargarResenasRecientes() {
             </button>
         </div>
       `;
+      resenaDiv.querySelector('.review-comment').textContent = resena.comentario || 'Sin comentario';
       container.appendChild(resenaDiv);
 
       // Re-asignar eventos a los botones para que no disparen el click del contenedor padre
