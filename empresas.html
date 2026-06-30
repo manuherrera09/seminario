@@ -46,24 +46,66 @@
     <div class="bg-[var(--color-surface)] p-6 rounded-lg shadow-md">
         <h1 class="text-3xl font-bold text-[var(--color-text-primary)] mb-6 border-b border-[var(--color-border)] pb-4">Para Empresas</h1>
 
-        <section id="reclama" class="mb-8">
-            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Reclama tu Restaurante</h2>
-            <p class="text-[var(--color-text-secondary)]">¿Eres el dueño de un restaurante listado en TrackEat? ¡Toma el control de tu perfil! Al reclamar tu negocio, podrás responder a las reseñas, actualizar la información de tu local y acceder a estadísticas exclusivas sobre tus clientes.</p>
-        </section>
-
-        <section id="publicidad" class="mb-8">
-            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Publicidad</h2>
-            <p class="text-[var(--color-text-secondary)]">Llega a miles de amantes de la comida en tu área. Ofrecemos paquetes de publicidad flexibles para destacar tu restaurante en nuestra plataforma, desde aparecer en la sección de "Tendencias" hasta campañas personalizadas en redes sociales.</p>
-        </section>
-
-        <section id="business" class="mb-8">
+        <section id="business" class="mb-12">
             <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">TrackEat for Business</h2>
-            <p class="text-[var(--color-text-secondary)]">Nuestra plataforma para negocios te da las herramientas para entender a tu clientela. Analiza las calificaciones detalladas, identifica tus puntos fuertes y descubre áreas de mejora. Convierte las opiniones en acciones y haz crecer tu negocio.</p>
+            <p class="text-[var(--color-text-secondary)] mb-6">Nuestra plataforma para negocios te da las herramientas para entender a tu clientela. Analiza las calificaciones detalladas, identifica tus puntos fuertes y descubre áreas de mejora. Convierte las opiniones en acciones y haz crecer tu negocio. Contáctanos para saber más.</p>
+
+            <form id="business-form" class="space-y-4 max-w-lg">
+                <div>
+                    <label for="business-name" class="block text-sm font-medium text-[var(--color-text-secondary)]">Tu Nombre</label>
+                    <input type="text" id="business-name" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="business-email" class="block text-sm font-medium text-[var(--color-text-secondary)]">Tu Email</label>
+                    <input type="email" id="business-email" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="restaurant-name" class="block text-sm font-medium text-[var(--color-text-secondary)]">Nombre del Restaurante</label>
+                    <input type="text" id="restaurant-name" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="business-message" class="block text-sm font-medium text-[var(--color-text-secondary)]">Mensaje</label>
+                    <textarea id="business-message" rows="4" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required></textarea>
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-[#c41200] text-white py-2 px-4 rounded-md font-semibold hover:bg-[#a00e00] transition">Enviar Consulta</button>
+                </div>
+            </form>
+            <div id="business-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-800 rounded-md max-w-lg border border-green-200">
+                <p class="font-semibold"><i class="fas fa-check-circle mr-2"></i>¡Mensaje enviado!</p>
+                <p class="text-sm">Uno de nuestros representantes se comunicará a la brevedad.</p>
+            </div>
         </section>
 
-        <section id="soporte-duenos" class="mb-8">
-            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Soporte para Dueños</h2>
-            <p class="text-[var(--color-text-secondary)]">Nuestro equipo de soporte para empresas está disponible para ayudarte a sacar el máximo provecho de TrackEat. Si tienes preguntas sobre cómo gestionar tu perfil, entender las estadísticas o configurar una campaña publicitaria, contáctanos en <a href="mailto:empresas@trackeat.com" class="text-[#c41200] hover:underline">empresas@trackeat.com</a>.</p>
+        <section id="soporte" class="mb-8">
+            <h2 class="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Soporte</h2>
+            <p class="text-[var(--color-text-secondary)] mb-6">Nuestro equipo de soporte para empresas está disponible para ayudarte a sacar el máximo provecho de TrackEat. Si tienes preguntas sobre cómo gestionar tu perfil o entender las estadísticas, no dudes en contactarnos.</p>
+
+            <form id="support-form" class="space-y-4 max-w-lg">
+                <div>
+                    <label for="support-name" class="block text-sm font-medium text-[var(--color-text-secondary)]">Tu Nombre</label>
+                    <input type="text" id="support-name" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="support-email" class="block text-sm font-medium text-[var(--color-text-secondary)]">Tu Email</label>
+                    <input type="email" id="support-email" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="support-subject" class="block text-sm font-medium text-[var(--color-text-secondary)]">Asunto</label>
+                    <input type="text" id="support-subject" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required>
+                </div>
+                <div>
+                    <label for="support-message" class="block text-sm font-medium text-[var(--color-text-secondary)]">Mensaje</label>
+                    <textarea id="support-message" rows="4" class="mt-1 block w-full px-3 py-2 bg-[var(--color-surface-secondary)] border border-[var(--color-border)] rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" required></textarea>
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-[#c41200] text-white py-2 px-4 rounded-md font-semibold hover:bg-[#a00e00] transition">Enviar Ticket de Soporte</button>
+                </div>
+            </form>
+            <div id="support-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-800 rounded-md max-w-lg border border-green-200">
+                <p class="font-semibold"><i class="fas fa-check-circle mr-2"></i>¡Mensaje enviado!</p>
+                <p class="text-sm">Uno de nuestros representantes se comunicará a la brevedad.</p>
+            </div>
         </section>
     </div>
 </main>
@@ -105,10 +147,8 @@
       <div>
         <h4 class="text-lg font-semibold text-white mb-4">Empresas</h4>
         <ul class="space-y-2 text-sm text-gray-400">
-          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Reclama tu restaurante</a></li>
-          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Publicidad</a></li>
-          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">TrackEat for Business</a></li>
-          <li><a href="empresas.html" class="hover:text-red-400 transition-colors">Soporte para dueños</a></li>
+          <li><a href="empresas.html#business" class="hover:text-red-400 transition-colors">TrackEat for Business</a></li>
+          <li><a href="empresas.html#soporte" class="hover:text-red-400 transition-colors">Soporte</a></li>
         </ul>
       </div>
 
@@ -141,5 +181,26 @@
 </footer>
 
 <script src="js/app.js?v=2"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const handleFormSubmission = (formId, messageId) => {
+            const form = document.getElementById(formId);
+            const messageDiv = document.getElementById(messageId);
+
+            if (form && messageDiv) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault(); // Evita la recarga de la página
+
+                    // Muestra el mensaje y resetea el formulario
+                    messageDiv.classList.remove('hidden');
+                    form.reset(); // Limpia los campos del formulario
+                });
+            }
+        };
+
+        handleFormSubmission('business-form', 'business-success-message');
+        handleFormSubmission('support-form', 'support-success-message');
+    });
+</script>
 </body>
 </html>
