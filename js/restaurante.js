@@ -468,9 +468,9 @@ function renderizarResenas(sortMode) {
         `;
 
         container.appendChild(divResena);
+        divResena.querySelector('.btn-like').addEventListener('click', (e) => procesarVoto(resena.id, 'like', e.currentTarget, resena.id_usuario));
+        divResena.querySelector('.btn-dislike').addEventListener('click', (e) => procesarVoto(resena.id, 'dislike', e.currentTarget, resena.id_usuario));
     });
-
-    configurarVotos(); // This will now call the function from app.js
 }
 
 function mostrarError(msg = null) {

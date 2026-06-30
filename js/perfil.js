@@ -297,10 +297,12 @@ function renderUserReviews(sortMode = 'recientes') {
                 </div>
             </div>
         `;
-        if (container) container.appendChild(reviewEl);
+        if (container) {
+            container.appendChild(reviewEl);
+            reviewEl.querySelector('.btn-like').addEventListener('click', (e) => procesarVoto(review.id, 'like', e.currentTarget, review.id_usuario));
+            reviewEl.querySelector('.btn-dislike').addEventListener('click', (e) => procesarVoto(review.id, 'dislike', e.currentTarget, review.id_usuario));
+        }
     });
-
-    configurarVotos();
 }
 
 
