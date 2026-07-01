@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurantes por Categoría - TrackEat</title>
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuración de Tailwind para usar Montserrat
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[var(--color-background)] text-[var(--color-text-primary)] flex flex-col min-h-screen">
+
+<nav class="bg-[#c41200] p-4 text-white shadow-lg relative z-50">
+  <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="flex items-center w-full md:w-auto justify-between">
+      <a href="index.html" class="flex items-center gap-2 text-xl font-bold hover:text-red-200 transition">
+        TrackEat
+        <img src="img/Logo blanco chikito.png" alt="Logo TrackEat" class="h-10 relative -top-1">
+      </a>
+    </div>
+
+    <!-- Barra de búsqueda en la navegación -->
+    <div class="w-full md:w-1/3 relative">
+      <div class="relative">
+        <input type="text" id="nav-search-input" class="w-full py-2 pl-10 pr-4 bg-[var(--color-surface)] text-[var(--color-text-primary)] rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-red-300 transition text-sm" placeholder="Busca un restaurante o usuario...">
+        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-secondary)] text-sm"></i>
+      </div>
+      <!-- Contenedor de sugerencias (oculto por defecto) -->
+      <div id="nav-search-suggestions" class="absolute w-full mt-1 bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden hidden z-50 text-left">
+        <ul id="nav-suggestions-list" class="max-h-60 overflow-y-auto">
+          <!-- Las sugerencias se llenarán con JS -->
+        </ul>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-4 w-full md:w-auto justify-end">
+      <a href="index.html" class="hover:text-red-200 transition">Inicio</a>
+      <a href="resena.html" class="hover:text-red-200 transition">Dejar Reseña</a>
+      <a href="perfil.html" class="hover:text-red-200 transition">Mi Perfil</a>
+      <div id="user-status" class="ml-2 pl-4 border-l border-red-300 flex items-center space-x-3 hidden md:flex relative">
+        <a href="login.html" id="nav-login-btn" class="text-sm font-semibold hover:text-red-200 transition">Iniciar sesión</a>
+        <a href="registro.html" id="nav-register-btn" class="text-sm bg-white text-[#c41200] px-3 py-1 rounded font-bold hover:bg-gray-100 transition">Regístrate</a>
+
+        <!-- Contenedor base de notificaciones para que JS lo pueda inyectar si no estaba -->
+        <div id="nav-notifications-container" class="relative hidden ml-3 z-50"></div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="container mx-auto p-6 flex-grow">
+    <h1 id="category-title" class="text-3xl font-bold text-[var(--color-text-primary)] mb-8 border-b border-[var(--color-border)] pb-4">Cargando categoría...</h1>
+    <div id="restaurants-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <!-- Las tarjetas de los restaurantes se insertarán aquí dinámicamente -->
+    </div>
+</main>
+
+<footer class="bg-gray-800 text-white pt-12 pb-6 mt-12">
+  <div class="container mx-auto px-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 border-b border-gray-700 pb-8">
+
+      <!-- Columna 1: Marca y Logo -->
+      <div class="md:col-span-1 flex flex-col items-start">
+        <h3 class="text-3xl font-bold text-red-400 mt-[-4px] mb-4">TrackEat</h3>
+        <img src="img/Track Eat (Abajo).png" alt="Logo TrackEat" class="w-24 opacity-80 hover:opacity-100 transition-opacity">
+      </div>
+
+      <!-- Columna 2: Nosotros -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Nosotros</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="nosotros.html#que-es-trackeat" class="hover:text-red-400 transition-colors">Qué es TrackEat</a></li>
+          <li><a href="nosotros.html#quienes-somos" class="hover:text-red-400 transition-colors">Quiénes somos</a></li>
+          <li><a href="nosotros.html#nuestra-mision" class="hover:text-red-400 transition-colors">Nuestra misión</a></li>
+          <li><a href="nosotros.html#contacto" class="hover:text-red-400 transition-colors">Contacto</a></li>
+        </ul>
+      </div>
+
+      <!-- Columna 3: Comunidad -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Comunidad</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="comunidad.html#normas" class="hover:text-red-400 transition-colors">Normas de la Comunidad</a></li>
+          <li><a href="comunidad.html#terminos" class="hover:text-red-400 transition-colors">Términos y Condiciones</a></li>
+          <li><a href="comunidad.html#comportamiento" class="hover:text-red-400 transition-colors">Comportamiento</a></li>
+          <li><a href="comunidad.html#soporte" class="hover:text-red-400 transition-colors">Soporte</a></li>
+        </ul>
+      </div>
+
+      <!-- Columna 4: Empresas -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Empresas</h4>
+        <ul class="space-y-2 text-sm text-gray-400">
+          <li><a href="empresas.html#business" class="hover:text-red-400 transition-colors">TrackEat for Business</a></li>
+          <li><a href="empresas.html#soporte" class="hover:text-red-400 transition-colors">Soporte</a></li>
+        </ul>
+      </div>
+
+      <!-- Columna 5: Redes -->
+      <div>
+        <h4 class="text-lg font-semibold text-white mb-4">Síguenos en nuestras redes</h4>
+        <div class="flex space-x-5">
+          <a href="https://www.instagram.com/trackeat.ok?igsh=anNzZ2V6c2dpZWxp" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-pink-500 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-instagram"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Instagram</span>
+          </a>
+          <a href="https://x.com/TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-red-400 transition-colors text-2xl flex flex-col items-center group">
+            <i class="fab fa-twitter"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Twitter</span>
+          </a>
+          <a href="https://www.tiktok.com/@TrackEatOK" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors text-2xl flex flex-col items-center group">
+            <i class="fa-brands fa-tiktok"></i>
+            <span class="text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">TikTok</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Copyright (Centrado) -->
+    <div class="mt-6 text-center text-gray-500 text-sm">
+      &copy; 2026 TrackEat. Todos los derechos reservados.
+    </div>
+  </div>
+</footer>
+
+<script src="js/app.js?v=2"></script>
+<script src="js/restaurantes-categoria.js"></script>
+</body>
+</html>

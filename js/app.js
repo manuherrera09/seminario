@@ -10,6 +10,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let restaurantesCacheados = [];
 let perfilesCacheados = [];
+let categoriasCacheadas = [];
 let currentUserId = null;
 let currentUserProfile = null;
 let navAuthReady = false;
@@ -50,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.dispatchEvent(new Event('navAuthReady'));
   }
 
-  // ---- Cargar lista de restaurantes y usuarios para la búsqueda ----
+  // ---- Cargar datos para la búsqueda ----
   cargarDatosParaBusqueda();
 
   // ---- Cargar Sugerencias y Tendencias ----
@@ -227,27 +228,24 @@ async function configurarNavegacionAutenticada() {
 }
 
 // =========================================================================
-// 3. LÓGICA DE BARRA DE BÚSQUEDA MIXTA (RESTAURANTES + USUARIOS)
+// 3. LÓGICA DE BARRA DE BÚSQUEDA
 // =========================================================================
 async function cargarDatosParaBusqueda() {
   try {
-    // Cargar Restaurantes
-    const { data: restaurantes, error: errorRest } = await supabaseClient
-      .from('restaurantes')
-      .select('id, nombre');
+    // Cargar Restaurantes, Perfiles y Categorías en paralelo
+    const [restaurantesRes, perfilesRes, categoriasRes] = await Promise.all([
+        supabaseClient.from('restaurantes').select('id, nombre'),
+        supabaseClient.from('perfiles').select('id, nombre_usuario, imagen_url'),
+        supabaseClient.rpc('get_distinct_categories')
+    ]);
 
-    if (!errorRest && restaurantes) {
-      restaurantesCacheados = restaurantes.map(r => ({ ...r, tipo: 'restaurante' }));
+    if (!restaurantesRes.error && restaurantesRes.data) {
+      restaurantesCacheados = restaurantesRes.data.map(r => ({ ...r, tipo: 'restaurante' }));
     }
 
-    // Cargar Perfiles (Usuarios)
-    const { data: perfiles, error: errorPerf } = await supabaseClient
-      .from('perfiles')
-      .select('id, nombre_usuario, imagen_url');
-
-    if (!errorPerf && perfiles) {
-      perfilesCacheados = perfiles
-          .filter(p => p.nombre_usuario) // Solo usuarios que hayan configurado un nombre
+    if (!perfilesRes.error && perfilesRes.data) {
+      perfilesCacheados = perfilesRes.data
+          .filter(p => p.nombre_usuario)
           .map(p => ({
               id: p.id,
               nombre: p.nombre_usuario,
@@ -255,6 +253,14 @@ async function cargarDatosParaBusqueda() {
               tipo: 'usuario'
           }));
     }
+
+    if (!categoriasRes.error && categoriasRes.data) {
+        categoriasCacheadas = categoriasRes.data.map(c => ({
+            nombre: c.categoria,
+            tipo: 'categoria'
+        }));
+    }
+
   } catch (err) {
     console.error("Error al cargar datos para búsqueda:", err);
   }
@@ -269,20 +275,17 @@ searchInputs.forEach((searchInput, index) => {
     const suggestionsList = suggestionsLists[index];
 
     if (searchInput) {
-      // Actualizamos el placeholder para que el usuario sepa que puede buscar ambas cosas
-      searchInput.placeholder = "Busca un restaurante o un usuario...";
+      searchInput.placeholder = "Busca un restaurante, usuario o categoría...";
 
       searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
 
-        // Si está vacío, ocultamos la lista
         if (query === '') {
           suggestionsContainer.classList.add('hidden');
           return;
         }
 
-        // Combinar ambas listas y filtrar
-        const todosLosDatos = [...restaurantesCacheados, ...perfilesCacheados];
+        const todosLosDatos = [...restaurantesCacheados, ...perfilesCacheados, ...categoriasCacheadas];
         const coincidencias = todosLosDatos.filter(item =>
           item.nombre.toLowerCase().includes(query)
         );
@@ -307,7 +310,7 @@ document.addEventListener('click', (e) => {
 function mostrarSugerencias(resultados, query, suggestionsList, suggestionsContainer, searchInput) {
   if (!suggestionsList || !suggestionsContainer) return;
 
-  suggestionsList.innerHTML = ''; // Limpiar anteriores
+  suggestionsList.innerHTML = '';
 
   if (resultados.length === 0) {
     const li = document.createElement('li');
@@ -315,47 +318,45 @@ function mostrarSugerencias(resultados, query, suggestionsList, suggestionsConta
     li.textContent = 'No se encontraron resultados';
     suggestionsList.appendChild(li);
   } else {
-    // Mostrar hasta 8 resultados para no saturar
     const topResultados = resultados.slice(0, 8);
 
     topResultados.forEach(item => {
       const li = document.createElement('li');
-      li.className = 'px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-[var(--color-border)] transition last:border-b-0 text-[var(--color-text-primary)] flex items-center justify-between';
+      li.className = 'interactive-list-item px-4 py-3 cursor-pointer border-b border-[var(--color-border)] transition last:border-b-0 text-[var(--color-text-primary)] flex items-center justify-between';
 
-      // Resaltar la coincidencia
       const regex = new RegExp(`(${query})`, "gi");
       const nombreResaltado = item.nombre.replace(regex, "<span class='font-bold text-[#c41200]'>$1</span>");
 
-      // Construir el lado izquierdo (icono/foto + nombre)
       let leftContent = '';
+      let rightBadge = '';
+
       if (item.tipo === 'restaurante') {
           leftContent = `<div class="flex items-center"><i class="fas fa-utensils text-[var(--color-text-secondary)] mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
-      } else {
-          // Si es usuario, mostrar icono de usuario o su foto en miniatura
+          rightBadge = `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase tracking-wider">Lugar</span>`;
+      } else if (item.tipo === 'usuario') {
           if (item.imagen_url) {
               leftContent = `<div class="flex items-center"><img src="${item.imagen_url}" class="w-6 h-6 rounded-full object-cover mr-3 border border-[var(--color-border)]"> ${nombreResaltado}</div>`;
           } else {
               leftContent = `<div class="flex items-center"><i class="fas fa-user text-[var(--color-text-secondary)] mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
           }
+          rightBadge = `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded uppercase tracking-wider">Usuario</span>`;
+      } else if (item.tipo === 'categoria') {
+          leftContent = `<div class="flex items-center"><i class="fas fa-tag text-[var(--color-text-secondary)] mr-3 w-4 text-center"></i> ${nombreResaltado}</div>`;
+          rightBadge = `<span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded uppercase tracking-wider">Categoría</span>`;
       }
-
-      // Etiqueta indicadora a la derecha
-      const rightBadge = item.tipo === 'restaurante'
-          ? `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded uppercase tracking-wider">Lugar</span>`
-          : `<span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded uppercase tracking-wider">Usuario</span>`;
 
       li.innerHTML = `${leftContent} ${rightBadge}`;
 
-      // Acción al hacer clic
       li.addEventListener('click', () => {
         searchInput.value = item.nombre;
         suggestionsContainer.classList.add('hidden');
 
-        // Redirigir según el tipo
         if (item.tipo === 'restaurante') {
             window.location.href = `restaurante.html?id=${item.id}`;
-        } else {
+        } else if (item.tipo === 'usuario') {
             window.location.href = `perfil.html?id=${item.id}`;
+        } else if (item.tipo === 'categoria') {
+            window.location.href = `restaurantes-categoria.html?categoria=${encodeURIComponent(item.nombre)}`;
         }
       });
 
@@ -578,7 +579,7 @@ async function cargarTendencias() {
 
 
 // =========================================================================
-// 4. LÓGICA DE RESEÑAS RECIENTES (Index) Y VOTOS
+// 6. LÓGICA DE RESEÑAS RECIENTES (Index) Y VOTOS
 // =========================================================================
 async function cargarResenasRecientes() {
   const container = document.getElementById('recent-reviews-container');
@@ -661,10 +662,10 @@ async function cargarResenasRecientes() {
         </div>
         <p class="review-comment text-[var(--color-text-primary)] mb-4 line-clamp-3 flex-grow pointer-events-none"></p>
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-50 mt-auto">
-            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20">
+            <button class="btn-like flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${likeClass} relative z-20" data-resena-id="${resena.id}" data-autor-id="${usuarioId}">
                 <i class="fas fa-thumbs-up"></i> <span class="like-count">${likesCount}</span>
             </button>
-            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20">
+            <button class="btn-dislike flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold ${dislikeClass} relative z-20" data-resena-id="${resena.id}" data-autor-id="${usuarioId}">
                 <i class="fas fa-thumbs-down"></i> <span class="dislike-count">${dislikesCount}</span>
             </button>
             <button class="btn-denunciar text-gray-400 hover:text-orange-500 hover:bg-orange-50 flex items-center gap-1 px-2 py-1 rounded transition text-xs font-semibold relative z-20" title="Denunciar reseña">
@@ -679,8 +680,8 @@ async function cargarResenasRecientes() {
       resenaDiv.querySelector('a').addEventListener('click', (e) => e.stopPropagation());
       resenaDiv.querySelectorAll('p a').forEach(a => a.addEventListener('click', (e) => e.stopPropagation()));
       resenaDiv.querySelector('.btn-audio').addEventListener('click', (e) => { e.stopPropagation(); leerResena(resena.comentario); });
-      resenaDiv.querySelector('.btn-like').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'like', e.currentTarget); });
-      resenaDiv.querySelector('.btn-dislike').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'dislike', e.currentTarget); });
+      resenaDiv.querySelector('.btn-like').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'like', e.currentTarget, usuarioId); });
+      resenaDiv.querySelector('.btn-dislike').addEventListener('click', (e) => { e.stopPropagation(); procesarVoto(resena.id, 'dislike', e.currentTarget, usuarioId); });
       resenaDiv.querySelector('.btn-denunciar').addEventListener('click', (e) => { e.stopPropagation(); handleReportReview(resena.id, resena.id_usuario); });
     });
 
@@ -756,11 +757,7 @@ function cerrarModalDeResena() {
 
 
 // Lógica universal de votos para el archivo app.js
-function configurarVotos() {
-    // Esta función ahora está vacía porque los listeners se añaden dinámicamente en cargarResenasRecientes
-}
-
-async function procesarVoto(resenaId, tipoVotoDeseado, botonClickado) {
+async function procesarVoto(resenaId, tipoVotoDeseado, botonClickado, autorId) {
     if (!currentUserId) {
         alert("Debes iniciar sesión para votar.");
         window.location.href = 'login.html';
@@ -770,8 +767,6 @@ async function procesarVoto(resenaId, tipoVotoDeseado, botonClickado) {
     const contenedorBotones = botonClickado.parentElement;
     const btnLike = contenedorBotones.querySelector('.btn-like');
     const btnDislike = contenedorBotones.querySelector('.btn-dislike');
-    const resena = todasLasResenasRecientes.find(r => r.id === resenaId);
-    const autorId = resena ? resena.id_usuario : null;
 
     const spanLikeCount = btnLike.querySelector('.like-count');
     const spanDislikeCount = btnDislike.querySelector('.dislike-count');
@@ -840,7 +835,7 @@ async function procesarVoto(resenaId, tipoVotoDeseado, botonClickado) {
 }
 
 // =========================================================================
-// 5. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
+// 7. SISTEMA DE NOTIFICACIONES (Universal para NavBar)
 // =========================================================================
 
 async function configurarNotificaciones(navContext = document) {
@@ -944,8 +939,10 @@ async function configurarNotificaciones(navContext = document) {
 
             notificaciones.forEach(notif => {
                 const li = document.createElement('li');
-                const isUnreadClass = notif.leida ? 'bg-[var(--color-surface)]' : 'bg-red-50';
-                li.className = `p-3 border-b border-[var(--color-border)] hover:bg-[var(--color-surface-secondary)] cursor-pointer transition ${isUnreadClass} pointer-events-auto`;
+                li.className = 'interactive-list-item p-3 border-b border-[var(--color-border)] cursor-pointer transition pointer-events-auto';
+                if (!notif.leida) {
+                    li.classList.add('bg-red-50', 'dark:bg-red-950/50');
+                }
 
                 const actor = actoresMap[notif.actor_id];
                 const actorNombre = actor && actor.nombre_usuario ? actor.nombre_usuario : 'Alguien';
