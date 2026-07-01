@@ -61,7 +61,6 @@ async function loadReports(status) {
                 buttonsHTML = `
                 <div class="mt-4 flex flex-wrap gap-2">
                     <button data-action="delete_review" class="bg-red-600 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-red-700 transition">Eliminar Reseña</button>
-                    <button data-action="warn_user" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-yellow-600 transition">Enviar Advertencia</button>
                     <button data-action="suspend_user" class="bg-black text-white px-3 py-1 rounded text-sm font-semibold hover:bg-gray-800 transition">Suspender Usuario</button>
                     <button data-action="dismiss" class="bg-gray-500 text-white px-3 py-1 rounded text-sm font-semibold hover:bg-gray-600 transition">Desestimar Denuncia</button>
                 </div>
